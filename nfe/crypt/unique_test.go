@@ -8,7 +8,7 @@ var confSalt []byte = []byte("example_hash_salt")
 var confUrlList []byte = []byte("list.url.example.com")
 var confUrlDown []byte = []byte("down.url.example.com")
 
-var tests = []struct {
+var uniqueTests = []struct {
 	Expected string
 	Input    string
 }{
@@ -20,7 +20,7 @@ var tests = []struct {
 }
 
 func TestUniqueExpected(t *testing.T) {
-	for _, test := range tests {
+	for _, test := range uniqueTests {
 		if res := Unique([]byte(test.Input), confSalt, confUrlList, confUrlDown); res != test.Expected {
 			t.Errorf("expected output '%s' for input '%s', '%s', '%s', '%s', got '%s'", test.Expected, test.Input, string(confSalt), string(confUrlList), string(confUrlDown), res)
 		}

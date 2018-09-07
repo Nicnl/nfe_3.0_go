@@ -1,7 +1,9 @@
 package crypt
 
 import (
+	"fmt"
 	"path/filepath"
+	"strconv"
 	"strings"
 )
 
@@ -27,10 +29,25 @@ func pathEncodeRaw(path string) string {
 func PathEncode(path string) string {
 	var b strings.Builder
 
-	encoded := pathEncodeRaw(path)
-	b.WriteString(encoded)
+	b.WriteString(pathEncodeRaw(path))
+	b.WriteString(GlobUnique([]byte(b.String()))[:2])
 
-	b.WriteString(GlobUnique([]byte(encoded))[:2])
+	return b.String()
+}
+
+func PathEncodeExpirable(path string, duration int64, since int64) string {
+	sinceStr := strconv.FormatInt(since+duration, 16)
+
+	var b strings.Builder
+	encodedPath := HexEncode(pathEncodeRaw(path), GlobUnique([]byte(fmt.Sprintf("%d", since))))
+	b.WriteString(encodedPath)
+	b.WriteByte('-')
+	b.WriteString(HexEncode(sinceStr, GlobUnique([]byte(encodedPath))))
+	if duration == 0 { // A zero duration means we generate an expirable path that's identical to PHP's one
+		b.WriteString(GlobUnique([]byte(b.String()))[:2])
+	} else {
+		b.WriteString(GlobUnique([]byte(b.String()))[:20])
+	}
 
 	return b.String()
 }

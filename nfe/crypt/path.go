@@ -54,5 +54,19 @@ func PathEncodeExpirable(path string, duration int64, since int64) string {
 
 	b.WriteString(GlobUnique([]byte(b.String()))[:hashLength])
 	return b.String()
+}
 
+func CheckHash(input string) bool {
+	hashLength := 2
+
+	// En mode "nouveau comportement" on s'en fous des anciens hash de taille 2
+	if strings.Contains(input, "-") {
+		hashLength = 25
+	}
+
+	if hashLength > len(input) {
+		return false
+	}
+
+	return GlobUnique([]byte(input[:len(input)-hashLength]))[:hashLength] == input[len(input)-hashLength:]
 }

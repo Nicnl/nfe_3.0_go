@@ -1,6 +1,8 @@
 package crypt
 
 import (
+	"fmt"
+	"nfe_3.0_go/nfe/vfs"
 	"testing"
 )
 
@@ -100,4 +102,21 @@ func TestCheckHash(t *testing.T) {
 			t.Errorf("expected output '%t' for input '%s', got '%t'", test.Expected, test.Input, res)
 		}
 	}
+}
+
+func TestFind(t *testing.T) {
+	v := vfs.Fake{
+		Structure: map[string][]string{
+			"/":                  {"movies", "music", "books", "other", "software", "games"},
+			"/software":          {"OpenOffice", "LibreOffice", "Firefox", "Thunderbird", "Audacity", "The Gimp", "VLC", "Handbrake", "Notepad++"},
+			"/software/Audacity": {"audacity_1.0.0.exe"},
+		},
+	}
+
+	path, err := Find(PathEncode("/software/Audacity/audacity_1.0.0.exe"), &v)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println("path =", path)
 }

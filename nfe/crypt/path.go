@@ -2,6 +2,7 @@ package crypt
 
 import (
 	"fmt"
+	"nfe_3.0_go/nfe/vfs"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -69,4 +70,52 @@ func CheckHash(input string) bool {
 	}
 
 	return GlobUnique([]byte(input[:len(input)-hashLength]))[:hashLength] == input[len(input)-hashLength:]
+}
+
+func Find(path string, v vfs.Vfs) (string, error) {
+	if !CheckHash(path) {
+		return "", fmt.Errorf("the checksum is invalid for the following path '%s'", path)
+	}
+	path = path[:len(path)-2] // Todo: check length again ?
+
+	filenameHash := path[len(path)-32:] // Todo: check length et si 32
+
+	decodedPath := HexDecode(path[:len(path)-32], filenameHash)
+
+	currentPath := "/"
+	for {
+		content, err := v.Ls(currentPath)
+		if err != nil {
+			return "", err
+		}
+
+		shouldContinue := false
+		searched := decodedPath[:32]
+		for _, entry := range content {
+			if GlobUnique([]byte(entry)) == searched {
+				if !strings.HasSuffix(currentPath, "/") {
+					currentPath += "/"
+				}
+				currentPath += entry
+
+				decodedPath = decodedPath[32:]
+				if len(decodedPath) == 0 {
+					if filenameHash != "" {
+						decodedPath = filenameHash
+						filenameHash = ""
+					} else {
+						return currentPath, nil
+					}
+				}
+
+				shouldContinue = true
+			}
+		}
+
+		if !shouldContinue {
+			break
+		}
+	}
+
+	return "", fmt.Errorf("no path found")
 }

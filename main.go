@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	nfeCrypt "nfe_3.0_go/nfe/crypt"
+	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -18,5 +20,12 @@ func encode(path string) string {
 }
 
 func main() {
-	fmt.Println("Return:", encode("/root_pathéèéè.png"))
+
+	err := filepath.Walk("C:/", func(path string, info os.FileInfo, err error) error {
+		fmt.Println(path)
+		return nil
+	})
+	if err != nil {
+		panic(err)
+	}
 }

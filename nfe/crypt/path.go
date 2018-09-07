@@ -39,28 +39,20 @@ func PathEncodeExpirable(path string, duration int64, since int64) string {
 	sinceStr := strconv.FormatInt(since+duration, 16)
 
 	var b strings.Builder
-	encodedPath := HexEncode(pathEncodeRaw(path), GlobUnique([]byte(fmt.Sprintf("%d", since))))
+	encodedPath := HexEncode(pathEncodeRaw(path), GlobUnique([]byte(fmt.Sprintf("%d", duration+since))))
 
 	b.WriteString(encodedPath)
 	b.WriteByte('-')
 	b.WriteString(HexEncode(sinceStr, GlobUnique([]byte(encodedPath))))
 
-	if duration == 0 {
-		// Une durée de 0 signifie qu'on génère un chemin expirable identique au PHP
-		b.WriteString(GlobUnique([]byte(b.String()))[:2])
-		return b.String()
-	} else {
-		// Ou sinon on adopte le nouveau comportement plus safe
-		pathPlusDuration := b.String()
-		checksum := GlobUnique([]byte(b.String()))[:25]
+	hashLength := 25
 
-		b.Reset()
-		reencodedPath := HexEncode(pathPlusDuration, checksum)
-		b.WriteString(reencodedPath[:len(encodedPath)])
-		b.WriteByte('-')
-		b.WriteString(reencodedPath[len(encodedPath)+1:])
-		b.WriteString(checksum)
-		return b.String()
+	// Une durée de 0 signifie qu'on génère un chemin expirable identique au PHP
+	if duration == 0 {
+		hashLength = 2
 	}
+
+	b.WriteString(GlobUnique([]byte(b.String()))[:hashLength])
+	return b.String()
 
 }

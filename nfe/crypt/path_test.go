@@ -35,16 +35,20 @@ var pathEncodeExpirableTests = []struct {
 	Duration int64
 	Since    int64
 }{
+	// Tests avec une durée de 0 (= même comportement que le PHP)
 	{"23d4bbb3a8851890209491c7fc3fcfe9-8a6c7ce73e", "/example_file.png", 0, 1536285675},
+	{"759d6437dc87734e9f5f63f149775365-32ea9e80ea", "/example_file.png", 0, 1536285674},
 	{"bf810b0b3f3145e2f36b97f03b25fd2123d4bbb3a8851890209491c7fc3fcfe9-1815f99690", "/dir/example_file.png", 0, 1536285675},
 	{"7745e7cb613bc63537d7408a728b26f6a6bf206fbe0935ca6dd40f21ad13e8ceb4ac71f5d8ff81fc5cef196d3672a40e23d4bbb3a8851890209491c7fc3fcfe9-c49a7cf7a6", "/double//slash/example_file.png", 0, 1536285675},
 	{"17e02de9e3f0f3015b40c614d85b6b21bdfcb9385cd0df4a5b22ecb243e52df8-0a07d84fdf", " no / trim.png ", 0, 1536285675},
 	{"8934e198e0db4bba33356f4a4370e334944f44a7457682cee3b946bc27cc67b9617e0a0fc6352e362e289a828181291badc880784c92c697891a70d9344138a7c05560985ae3c17421466b3b471cb894fff6f6d5a6a0fe24c79db50162258b8b23d4bbb3a8851890209491c7fc3fcfe9-20753697cc", "/very/long/chain/of/subdirs/everywhere/example_file.png", 0, 1536285675},
 	{"3b3d0dc83f62c65406959818155bcf0d6d14ee6c6793c22861326e17b7df70e14252aa4c3802eaef085d57152e470cb50729787138b561ac20d8cc71bd935e83609c6bb507525863d98bd5b5b7371f34e677f1ed579b4e7c82c6283ff7e7a1dbac39da8525b5dd520f7b09adb112972db063411ba3c6d6277b277b960f3f303fa63ceb35beff9453f597ebb3ed814bedb35ca724fe9f2456f452f5062aa09342c74c69cceaabacdd5999f6fe0bba32c4b57472eeedf418f4960951353db0dc5b-0b9ad5052e", "/ Voix/ ambiguë/ d'un/ cœur/ qui,/ au/ zéphyr,/ préfère/ les/ jattes/ de/ kiwis.png", 0, 1536285675},
 	{"d2bac3505a1cc3f9bd871cd2044c66d5-598b436c3c", "", 0, 1536285675},
-	{"07f4706075bada774db5d4773a71cb34-57913242e420c5bddd35c2e72d2143b04", "/example_file.png", 900, 1536285675},
-	{"ac9096061a3517afe43ece4c80d39dbf-0efee946a824518618f734064e92e241d", "/example_file.png", 900, 1536285676},
-	{"2204f56944c658059bf19cda283ad3a5-388f2aad2e98b0e94288756cf555b0df7", "/example_file.png", 901, 1536285676},
+
+	// Tests avec une durée > 0 (= comportement de la nouvelle version, plus sécure
+	{"3ddbf1108305b4cf91b13582a62d2b86-85d91ffc4ebfb9c4f31de0a8d24567646", "/example_file.png", 900, 1536285671},
+	{"7b02670cc200872f59924e789c6bb0bb-a5c76828ea90f0e5ae8f389b3076329d3", "/example_file.png", 900, 1536285672},
+	{"9c69c6f88a826ae2fdffa7b9dcdcb3e1-9fe2b38214a40b3b851f8e39a71b13e47", "/example_file.png", 901, 1536285672},
 }
 
 func TestPathEncodeExpirable(t *testing.T) {

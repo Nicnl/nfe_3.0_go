@@ -37,14 +37,22 @@ func PathEncode(path string) string {
 }
 
 func PathEncodeExpirable(path string, duration int64, since int64) string {
+	//fmt.Println("since+duration =", since+duration)
 	sinceStr := strconv.FormatInt(since+duration, 16)
+
+	//decodedPath := pathEncodeRaw(path)
+	//fmt.Println("decodedPath =", decodedPath)
 
 	var b strings.Builder
 	encodedPath := HexEncode(pathEncodeRaw(path), GlobUnique([]byte(fmt.Sprintf("%d", duration+since))))
+	//fmt.Println("encodedPath key =", GlobUnique([]byte(fmt.Sprintf("%d", duration+since))))
 
 	b.WriteString(encodedPath)
 	b.WriteByte('-')
 	b.WriteString(HexEncode(sinceStr, GlobUnique([]byte(encodedPath))))
+	//fmt.Println("sinceStr =", sinceStr)
+	//fmt.Println("sinceStr enc =", HexEncode(sinceStr, GlobUnique([]byte(encodedPath))))
+	//fmt.Println("sinceStr key =", GlobUnique([]byte(encodedPath)))
 
 	hashLength := 25
 
@@ -54,6 +62,8 @@ func PathEncodeExpirable(path string, duration int64, since int64) string {
 	}
 
 	b.WriteString(GlobUnique([]byte(b.String()))[:hashLength])
+
+	//fmt.Println("------------------------")
 	return b.String()
 }
 
@@ -107,14 +117,54 @@ func Find(path string, v vfs.Vfs) (string, error) {
 	if !CheckHash(path) {
 		return "", fmt.Errorf("the checksum is invalid for the following path '%s'", path)
 	}
-	path = path[:len(path)-2]
 
-	if len(path) < 32 {
+	decodedPath := ""
+	filenameHash := ""
+	if pos := strings.IndexByte(path, '-'); pos != -1 {
+		// Si c'est un chemin expirable
+		// encodedPath := HexEncode(pathEncodeRaw(path), GlobUnique([]byte(fmt.Sprintf("%d", duration+since))))
+
+		expiration := path[pos+1:]
+		//expiration := path[pos+1:]
+
+		encodedPath := path[:pos]
+
+		//fmt.Println("path =", path)
+		//fmt.Println("path =", encodedPath, expiration)
+
+		sinceStrKey := GlobUnique([]byte(encodedPath))
+		//fmt.Println("sinceStrKey =", sinceStrKey)
+
+		sinceStrEncoded := expiration[:len(expiration)-25]
+		//fmt.Println("sinceStrEncoded =", sinceStrEncoded)
+
+		sinceStr := HexDecode(sinceStrEncoded, sinceStrKey)
+		//fmt.Println("sinceStr =", sinceStr)
+
+		since, err := strconv.ParseInt(sinceStr, 16, 64)
+		if err != nil {
+			return "", err
+		}
+		//fmt.Println("since =", since)
+
+		encodedPathKey := GlobUnique([]byte(fmt.Sprintf("%d", since)))
+		//fmt.Println("encodedPathKey =", encodedPathKey)
+
+		decodedPath = HexDecode(encodedPath, encodedPathKey)
+		//fmt.Println("decodedPath", decodedPath)
+	} else {
+		decodedPath = path[:len(path)-2]
+	}
+
+	if len(decodedPath) < 32 {
 		return "", fmt.Errorf("the provided path is too short")
 	}
-	filenameHash := path[len(path)-32:] // Todo: check length et si 32
 
-	decodedPath := HexDecode(path[:len(path)-32], filenameHash)
+	filenameHash = decodedPath[len(decodedPath)-32:]
+	//fmt.Println("filenameHash", filenameHash)
+
+	decodedPath = HexDecode(decodedPath[:len(decodedPath)-32], filenameHash)
+	//fmt.Println("decodedPath", decodedPath)
 
 	return subFind("/", decodedPath+filenameHash, v)
 }

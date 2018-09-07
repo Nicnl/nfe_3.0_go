@@ -40,14 +40,27 @@ func PathEncodeExpirable(path string, duration int64, since int64) string {
 
 	var b strings.Builder
 	encodedPath := HexEncode(pathEncodeRaw(path), GlobUnique([]byte(fmt.Sprintf("%d", since))))
+
 	b.WriteString(encodedPath)
 	b.WriteByte('-')
 	b.WriteString(HexEncode(sinceStr, GlobUnique([]byte(encodedPath))))
-	if duration == 0 { // A zero duration means we generate an expirable path that's identical to PHP's one
+
+	if duration == 0 {
+		// Une durée de 0 signifie qu'on génère un chemin expirable identique au PHP
 		b.WriteString(GlobUnique([]byte(b.String()))[:2])
+		return b.String()
 	} else {
-		b.WriteString(GlobUnique([]byte(b.String()))[:20])
+		// Ou sinon on adopte le nouveau comportement plus safe
+		pathPlusDuration := b.String()
+		checksum := GlobUnique([]byte(b.String()))[:25]
+
+		b.Reset()
+		reencodedPath := HexEncode(pathPlusDuration, checksum)
+		b.WriteString(reencodedPath[:len(encodedPath)])
+		b.WriteByte('-')
+		b.WriteString(reencodedPath[len(encodedPath)+1:])
+		b.WriteString(checksum)
+		return b.String()
 	}
 
-	return b.String()
 }

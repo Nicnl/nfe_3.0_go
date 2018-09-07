@@ -72,50 +72,49 @@ func CheckHash(input string) bool {
 	return GlobUnique([]byte(input[:len(input)-hashLength]))[:hashLength] == input[len(input)-hashLength:]
 }
 
+func subFind(currentPath string, searched string, v vfs.Vfs) (string, error) {
+	//fmt.Println("v.Ls =>", currentPath)
+	content, err := v.Ls(currentPath)
+	if err != nil {
+		return "", err
+	}
+
+	currentSearched := searched[:32]
+	//fmt.Println("currentSearched =", currentSearched)
+
+	for _, entry := range content {
+		//fmt.Println("  -", entry, "  =>  ", GlobUnique([]byte(entry)))
+		if GlobUnique([]byte(entry)) == currentSearched {
+			if !strings.HasSuffix(currentPath, "/") {
+				currentPath += "/"
+			}
+			currentPath += entry
+
+			searched = searched[32:]
+			if searched == "" {
+				// Plus rien à chercher, fin de la récursion
+				return currentPath, nil
+			} else {
+				return subFind(currentPath, searched, v)
+			}
+		}
+	}
+
+	return "", fmt.Errorf("no entry matching for hash '%s' in path '%s", searched, currentPath)
+}
+
 func Find(path string, v vfs.Vfs) (string, error) {
 	if !CheckHash(path) {
 		return "", fmt.Errorf("the checksum is invalid for the following path '%s'", path)
 	}
-	path = path[:len(path)-2] // Todo: check length again ?
+	path = path[:len(path)-2]
 
+	if len(path) < 32 {
+		return "", fmt.Errorf("the provided path is too short")
+	}
 	filenameHash := path[len(path)-32:] // Todo: check length et si 32
 
 	decodedPath := HexDecode(path[:len(path)-32], filenameHash)
 
-	currentPath := "/"
-	for {
-		content, err := v.Ls(currentPath)
-		if err != nil {
-			return "", err
-		}
-
-		shouldContinue := false
-		searched := decodedPath[:32]
-		for _, entry := range content {
-			if GlobUnique([]byte(entry)) == searched {
-				if !strings.HasSuffix(currentPath, "/") {
-					currentPath += "/"
-				}
-				currentPath += entry
-
-				decodedPath = decodedPath[32:]
-				if len(decodedPath) == 0 {
-					if filenameHash != "" {
-						decodedPath = filenameHash
-						filenameHash = ""
-					} else {
-						return currentPath, nil
-					}
-				}
-
-				shouldContinue = true
-			}
-		}
-
-		if !shouldContinue {
-			break
-		}
-	}
-
-	return "", fmt.Errorf("no path found")
+	return subFind("/", decodedPath+filenameHash, v)
 }

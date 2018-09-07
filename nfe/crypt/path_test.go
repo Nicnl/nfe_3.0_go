@@ -1,7 +1,6 @@
 package crypt
 
 import (
-	"fmt"
 	"nfe_3.0_go/nfe/vfs"
 	"testing"
 )
@@ -104,6 +103,31 @@ func TestCheckHash(t *testing.T) {
 	}
 }
 
+var checkFind = map[string]bool{
+	"/movies":                               true,
+	"/music":                                true,
+	"/books":                                true,
+	"/other":                                true,
+	"/software":                             true,
+	"/games":                                true,
+	"/software/OpenOffice":                  true,
+	"/software/LibreOffice":                 true,
+	"/software/Firefox":                     true,
+	"/software/Thunderbird":                 true,
+	"/software/Audacity":                    true,
+	"/software/The Gimp":                    true,
+	"/software/VLC":                         true,
+	"/software/Handbrake":                   true,
+	"/software/Notepad++":                   true,
+	"/software/Audacity/audacity_1.0.0.exe": true,
+
+	"":                          false,
+	"/":                         false,
+	"/nonexisting":              false,
+	"/software/":                false,
+	"/software/Audacity/qsdqsd": false,
+}
+
 func TestFind(t *testing.T) {
 	v := vfs.Fake{
 		Structure: map[string][]string{
@@ -113,10 +137,14 @@ func TestFind(t *testing.T) {
 		},
 	}
 
-	path, err := Find(PathEncode("/software/Audacity/audacity_1.0.0.exe"), &v)
-	if err != nil {
-		panic(err)
+	for path, expected := range checkFind {
+		findPath, err := Find(PathEncode(path), &v)
+		if err != nil {
+			if expected {
+				t.Error(path, " => ", err)
+			}
+		} else if findPath == path != expected {
+			t.Errorf("expected findPath to be '%s', got '%s'", path, findPath)
+		}
 	}
-
-	fmt.Println("path =", path)
 }

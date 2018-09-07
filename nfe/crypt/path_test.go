@@ -149,18 +149,18 @@ func TestFindWithoutExpiration(t *testing.T) {
 	}
 }
 
-func TestFindWithExpiration(t *testing.T) {
-	v := vfs.Fake{
-		Structure: map[string][]string{
-			"/":                  {"movies", "music", "books", "other", "software", "games"},
-			"/software":          {"OpenOffice", "LibreOffice", "Firefox", "Thunderbird", "Audacity", "The Gimp", "VLC", "Handbrake", "Notepad++"},
-			"/software/Audacity": {"audacity_1.0.0.exe"},
-		},
-	}
+var vfsFake = vfs.Fake{
+	Structure: map[string][]string{
+		"/":                  {"movies", "music", "books", "other", "software", "games"},
+		"/software":          {"OpenOffice", "LibreOffice", "Firefox", "Thunderbird", "Audacity", "The Gimp", "VLC", "Handbrake", "Notepad++"},
+		"/software/Audacity": {"audacity_1.0.0.exe"},
+	},
+}
 
+func TestFindWithExpiration(t *testing.T) {
 	var timestamp int64 = 1536285675
 	for path, expected := range checkFind {
-		findPath, err := Find(PathEncodeExpirable(path, 10, timestamp), timestamp, &v)
+		findPath, err := Find(PathEncodeExpirable(path, 10, timestamp), timestamp, &vfsFake)
 		if err != nil {
 			if expected {
 				t.Error(path, " => ", err)
@@ -172,14 +172,6 @@ func TestFindWithExpiration(t *testing.T) {
 }
 
 func TestFindExpirationReached(t *testing.T) {
-	v := vfs.Fake{
-		Structure: map[string][]string{
-			"/":                  {"movies", "music", "books", "other", "software", "games"},
-			"/software":          {"OpenOffice", "LibreOffice", "Firefox", "Thunderbird", "Audacity", "The Gimp", "VLC", "Handbrake", "Notepad++"},
-			"/software/Audacity": {"audacity_1.0.0.exe"},
-		},
-	}
-
 	var timestamp int64 = 1536285675
 	var duration int64 = 10
 	for path, expected := range checkFind {
@@ -187,7 +179,7 @@ func TestFindExpirationReached(t *testing.T) {
 			continue
 		}
 
-		findPath, err := Find(PathEncodeExpirable(path, duration, timestamp), timestamp+duration+1, &v)
+		findPath, err := Find(PathEncodeExpirable(path, duration, timestamp), timestamp+duration+1, &vfsFake)
 		if err == nil {
 			t.Errorf("err should not be nil")
 		} else if findPath != "" {

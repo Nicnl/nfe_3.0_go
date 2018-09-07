@@ -1,7 +1,7 @@
 package crypt
 
 import (
-	"fmt"
+	"path/filepath"
 	"strings"
 )
 
@@ -11,14 +11,24 @@ func pathEncodeRaw(path string) string {
 		return GlobUnique([]byte(path))
 	}
 
-	return ""
+	dir, filename := filepath.Split(path)
+	dir = strings.TrimRight(dir, "/")
+
+	filenameHash := GlobUnique([]byte(filename))
+
+	var b strings.Builder
+	for _, subdir := range strings.Split(dir, "/") {
+		b.WriteString(GlobUnique([]byte(subdir)))
+	}
+
+	return HexEncode(b.String(), filenameHash) + filenameHash
 }
 
 func PathEncode(path string) string {
 	var b strings.Builder
 
 	encoded := pathEncodeRaw(path)
-	fmt.Println(fmt.Sprintf("%x", GlobUnique([]byte(encoded))[:1]))
+	b.WriteString(encoded)
 
 	b.WriteString(GlobUnique([]byte(encoded))[:2])
 

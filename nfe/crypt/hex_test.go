@@ -24,3 +24,21 @@ func TestHexEncode(t *testing.T) {
 		}
 	}
 }
+
+var hexDecodeTests = []struct {
+	Input string
+	Key   string
+}{
+	{"d4056d1f64fd72d1b05df35fa9d782f9c5", "789beef750"},
+	{"e5022159024b540fa0837863959996bb", "5a633766d3288c4afede93832d6ef688a5fc6512a0ee2a75699fc12c3d1e8f8b"},
+}
+
+func TestHexDecode(t *testing.T) {
+	for _, test := range hexDecodeTests {
+		enc := HexEncode(test.Input, test.Key)
+		dec := HexDecode(enc, test.Key)
+		if dec != test.Input {
+			t.Errorf("expected '%s' but got '%s'", test.Input, dec)
+		}
+	}
+}

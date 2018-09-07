@@ -138,7 +138,7 @@ func TestFindWithoutExpiration(t *testing.T) {
 	}
 
 	for path, expected := range checkFind {
-		findPath, err := Find(PathEncode(path), &v)
+		findPath, err := Find(PathEncode(path), 0, &v)
 		if err != nil {
 			if expected {
 				t.Error(path, " => ", err)
@@ -158,14 +158,40 @@ func TestFindWithExpiration(t *testing.T) {
 		},
 	}
 
+	var timestamp int64 = 1536285675
 	for path, expected := range checkFind {
-		findPath, err := Find(PathEncodeExpirable(path, 10, 1536285675), &v)
+		findPath, err := Find(PathEncodeExpirable(path, 10, timestamp), timestamp, &v)
 		if err != nil {
 			if expected {
 				t.Error(path, " => ", err)
 			}
 		} else if findPath == path != expected {
 			t.Errorf("expected findPath to be '%s', got '%s'", path, findPath)
+		}
+	}
+}
+
+func TestFindExpirationReached(t *testing.T) {
+	v := vfs.Fake{
+		Structure: map[string][]string{
+			"/":                  {"movies", "music", "books", "other", "software", "games"},
+			"/software":          {"OpenOffice", "LibreOffice", "Firefox", "Thunderbird", "Audacity", "The Gimp", "VLC", "Handbrake", "Notepad++"},
+			"/software/Audacity": {"audacity_1.0.0.exe"},
+		},
+	}
+
+	var timestamp int64 = 1536285675
+	var duration int64 = 10
+	for path, expected := range checkFind {
+		if !expected {
+			continue
+		}
+
+		findPath, err := Find(PathEncodeExpirable(path, duration, timestamp), timestamp+duration+1, &v)
+		if err == nil {
+			t.Errorf("err should not be nil")
+		} else if findPath != "" {
+			t.Errorf("findPath should be empty, got '%s'", findPath)
 		}
 	}
 }

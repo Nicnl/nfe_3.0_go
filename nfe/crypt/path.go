@@ -113,7 +113,7 @@ func subFind(currentPath string, searched string, v vfs.Vfs) (string, error) {
 	return "", fmt.Errorf("no entry matching for hash '%s' in path '%s", searched, currentPath)
 }
 
-func Find(path string, v vfs.Vfs) (string, error) {
+func Find(path string, timeLimit int64, v vfs.Vfs) (string, error) {
 	if !CheckHash(path) {
 		return "", fmt.Errorf("the checksum is invalid for the following path '%s'", path)
 	}
@@ -146,6 +146,10 @@ func Find(path string, v vfs.Vfs) (string, error) {
 			return "", err
 		}
 		//fmt.Println("since =", since)
+
+		if timeLimit > since {
+			return "", fmt.Errorf("time limit is reached, path valid until '%d', given time limit is '%d', diff is '%d'", since, timeLimit, timeLimit-since)
+		}
 
 		encodedPathKey := GlobUnique([]byte(fmt.Sprintf("%d", since)))
 		//fmt.Println("encodedPathKey =", encodedPathKey)

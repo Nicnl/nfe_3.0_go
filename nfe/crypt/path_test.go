@@ -128,17 +128,17 @@ var checkFind = map[string]bool{
 	"/software/Audacity/qsdqsd": false,
 }
 
-func TestFindWithoutExpiration(t *testing.T) {
-	v := vfs.Fake{
-		Structure: map[string][]string{
-			"/":                  {"movies", "music", "books", "other", "software", "games"},
-			"/software":          {"OpenOffice", "LibreOffice", "Firefox", "Thunderbird", "Audacity", "The Gimp", "VLC", "Handbrake", "Notepad++"},
-			"/software/Audacity": {"audacity_1.0.0.exe"},
-		},
-	}
+var vfsFake = vfs.Fake{
+	Structure: map[string][]string{
+		"/":                  {"movies", "music", "books", "other", "software", "games"},
+		"/software":          {"OpenOffice", "LibreOffice", "Firefox", "Thunderbird", "Audacity", "The Gimp", "VLC", "Handbrake", "Notepad++"},
+		"/software/Audacity": {"audacity_1.0.0.exe"},
+	},
+}
 
+func TestFindWithoutExpiration(t *testing.T) {
 	for path, expected := range checkFind {
-		findPath, err := Find(PathEncode(path), 0, &v)
+		findPath, err := Find(PathEncode(path), 0, &vfsFake)
 		if err != nil {
 			if expected {
 				t.Error(path, " => ", err)
@@ -147,14 +147,6 @@ func TestFindWithoutExpiration(t *testing.T) {
 			t.Errorf("expected findPath to be '%s', got '%s'", path, findPath)
 		}
 	}
-}
-
-var vfsFake = vfs.Fake{
-	Structure: map[string][]string{
-		"/":                  {"movies", "music", "books", "other", "software", "games"},
-		"/software":          {"OpenOffice", "LibreOffice", "Firefox", "Thunderbird", "Audacity", "The Gimp", "VLC", "Handbrake", "Notepad++"},
-		"/software/Audacity": {"audacity_1.0.0.exe"},
-	},
 }
 
 func TestFindWithExpiration(t *testing.T) {

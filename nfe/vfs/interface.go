@@ -1,6 +1,8 @@
 package vfs
 
+import "os"
+
 type Vfs interface {
 	Ls(path string) ([]string, error)
-	FileSize(path string) (int64, error)
+	Stat(path string) (os.FileInfo, error)
 }

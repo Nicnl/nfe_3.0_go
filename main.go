@@ -22,10 +22,9 @@ func encode(path string) string {
 }
 
 func main() {
-
 	path := "/vmshare_hub/ISOs/Windows/Windows 10 - 1703/Win10_1703_French_x64.iso"
 
-	http.HandleFunc("/lol.pngz", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/Win10_1703_French_x64.iso", func(w http.ResponseWriter, r *http.Request) {
 		defer func() {
 			if err := recover(); err != nil {
 				fmt.Println("Http main serving goroutine has terminated forcefully:", err)
@@ -33,6 +32,8 @@ func main() {
 				fmt.Println("Http main serving goroutine has terminated gracefully")
 			}
 		}()
+
+		fmt.Println("Has began to serve file")
 
 		f, err := os.Open(path)
 		if err != nil {
@@ -48,7 +49,7 @@ func main() {
 		w.Header().Set("Content-Disposition", "attachment; filename=\"Win10_1703_French_x64.iso\"")
 		w.WriteHeader(http.StatusOK)
 
-		limiteVitesse := 400 * 1024
+		limiteVitesse := 550 * 1024
 		bufferSize := 20 * 1000
 
 		nbPackets := limiteVitesse / bufferSize
@@ -88,10 +89,10 @@ func main() {
 				return
 			}
 
-			fmt.Println("Time:", int64(diff/time.Microsecond), "us")
+			//fmt.Println("Time:", int64(diff/time.Microsecond), "us")
 			if timeBetweenPackets > diff {
-				timeToWait := (timeBetweenPackets - diff) * 97 / 100
-				fmt.Println("Client was too fast, waiting for", timeToWait/time.Microsecond, "us")
+				timeToWait := (timeBetweenPackets - diff) * 95 / 100
+				//fmt.Println("Client was too fast, waiting for", timeToWait/time.Microsecond, "us")
 				time.Sleep(timeToWait)
 			}
 		}

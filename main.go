@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/gin-gonic/gin"
 	"net/http"
 	nfeCrypt "nfe_3.0_go/nfe/crypt"
 	"os"
@@ -26,9 +27,11 @@ const averageTime time.Duration = 333 * time.Millisecond
 func main() {
 	path := "/vmshare_hub/ISOs/Windows/Windows 10 - 1703/Win10_1703_French_x64.iso"
 
-	http.HandleFunc("/Win10_1703_French_x64.iso", func(w http.ResponseWriter, r *http.Request) {
+	r := gin.Default()
+
+	r.GET("/download", func(c *gin.Context) {
 		defer func() {
-			r.Body.Close()
+			c.Request.Body.Close()
 
 			if err := recover(); err != nil {
 				fmt.Println("Http main serving goroutine has terminated forcefully:", err)
@@ -50,9 +53,9 @@ func main() {
 			panic(err)
 		}
 
-		w.Header().Set("Content-Length", fmt.Sprintf("%d", info.Size()))
-		w.Header().Set("Content-Disposition", "attachment; filename=\"Win10_1703_French_x64.iso\"")
-		w.WriteHeader(http.StatusOK)
+		c.Status(http.StatusOK)
+		c.Header("Content-Length", fmt.Sprintf("%d", info.Size()))
+		c.Header("Content-Disposition", "attachment; filename=\"Win10_1703_French_x64.iso\"")
 
 		var limiteVitesse int64 = 550 * 1024
 		var bufferSize int64 = 20 * 1000
@@ -118,7 +121,7 @@ func main() {
 			}
 
 			start := time.Now()
-			_, err := w.Write(data)
+			_, err := c.Writer.Write(data)
 			diff := time.Since(start)
 
 			if err != nil {
@@ -140,7 +143,7 @@ func main() {
 		}
 	})
 
-	err := http.ListenAndServe(":9000", nil)
+	err := http.ListenAndServe(":9000", r)
 	if err != nil {
 		panic(err)
 	}

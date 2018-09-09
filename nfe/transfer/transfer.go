@@ -32,13 +32,10 @@ type Transfer struct {
 	UrlExpiration time.Time
 	UrlSpeedLimit int64
 	FileLength    int64
+	FileName      string
 	FilePath      string
 	SectionLength int64
 	BufferSize    int64
-
-	// Informations internes
-	CurrentSpeedSentPackets int64
-	CurrentSpeedMeasureTime time.Duration
 }
 
 func (t *Transfer) SetSpeedLimit(speedLimit int64) {
@@ -63,6 +60,7 @@ func New(filePath string, speedLimit int64, bufferSize int64) (*Transfer, error)
 	t := Transfer{
 		Guid: uuid.Must(uuid.NewV4()),
 
+		FileName:      info.Name(),
 		FilePath:      filePath,
 		FileLength:    fileSize,
 		SectionLength: 0, // Dépends de la requête du client : calculé par la fonction ServeFile

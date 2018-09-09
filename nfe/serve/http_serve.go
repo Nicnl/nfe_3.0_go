@@ -12,11 +12,11 @@ import (
 
 const averageTime = 333 * time.Millisecond
 
-func sendHeaders(c *gin.Context, fileName string, fileSize int64) {
+func sendHeaders(c *gin.Context, t *transfer.Transfer) {
 	c.Status(http.StatusOK)
-	c.Header("Content-Length", fmt.Sprintf("%d", fileSize))
+	c.Header("Content-Length", fmt.Sprintf("%d", t.FileLength)) // Todo: sections
 	c.Header("Content-Disposition", mime.FormatMediaType("attachment", map[string]string{
-		"filename": fileName,
+		"filename": t.FileName,
 	}))
 }
 
@@ -55,13 +55,10 @@ func routineMeasureSpeed(speedChannel chan time.Duration, t *transfer.Transfer) 
 		}
 
 		if measureTime > averageTime {
-			//t.CurrentSpeed = int64(float64(sentPackets*t.BufferSize) / (float64(measureTime) / float64(time.Second)))
+			t.CurrentSpeed = int64(float64(sentPackets*t.BufferSize) / (float64(measureTime) / float64(time.Second)))
 			//fmt.Println("B/s =>", t.CurrentSpeed)
 			//fmt.Println("KB/s =>", t.CurrentSpeed/1000)
 			//fmt.Println("MB/s =>", t.CurrentSpeed/1000/1000)
-
-			t.CurrentSpeedMeasureTime = measureTime
-			t.CurrentSpeedSentPackets = sentPackets
 
 			measureTime = 0
 			sentPackets = 0
@@ -94,7 +91,7 @@ func ServeFile(c *gin.Context, t *transfer.Transfer) {
 	defer f.Close()
 
 	// Envoi des headers avec taille et nom du fichier
-	sendHeaders(c, f.Name(), t.FileLength)
+	sendHeaders(c, t)
 
 	// Lancement de la routine de lecture du disque
 	readerChannel := make(chan []byte, 100)

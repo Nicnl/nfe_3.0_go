@@ -58,6 +58,8 @@ func New(filePath string, speedLimit int64, bufferSize int64) (*Transfer, error)
 
 	// Création de l'instance du transfert
 	t := Transfer{
+		Guid: uuid.Must(uuid.NewV4()),
+
 		FilePath:      filePath,
 		FileLength:    fileSize,
 		SectionLength: 0, // Dépends de la requête du client : calculé par la fonction ServeFile

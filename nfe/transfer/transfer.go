@@ -2,7 +2,7 @@ package transfer
 
 import (
 	"github.com/gofrs/uuid"
-	"os"
+	"nfe_3.0_go/nfe/vfs"
 	"time"
 )
 
@@ -48,21 +48,20 @@ func (t *Transfer) SetSpeedLimit(speedLimit int64) {
 	t.CurrentSpeedLimitDelay = time.Second / time.Duration(nbPackets)
 }
 
-func New(filePath string, speedLimit int64, bufferSize int64) (*Transfer, error) {
-	// Obtention de la taille du fichier
-	info, err := os.Stat(filePath)
+func New(vfs vfs.Vfs, vfsPath string, speedLimit int64, bufferSize int64) (*Transfer, error) {
+	// Obtention de la taille du fichier (et on vérifie que le fichier existe vraiment par la même occasion)
+	info, err := vfs.Stat(vfsPath)
 	if err != nil {
 		return nil, err
 	}
-	fileSize := info.Size()
 
 	// Création de l'instance du transfert
 	t := Transfer{
 		Guid: uuid.Must(uuid.NewV4()),
 
 		FileName:      info.Name(),
-		FilePath:      filePath,
-		FileLength:    fileSize,
+		FilePath:      vfsPath,
+		FileLength:    info.Size(),
 		SectionLength: 0, // Dépends de la requête du client : calculé par la fonction ServeFile
 		BufferSize:    bufferSize,
 	}

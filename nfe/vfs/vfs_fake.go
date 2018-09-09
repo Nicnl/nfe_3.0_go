@@ -1,7 +1,10 @@
 package vfs
 
 import (
+	"bytes"
 	"fmt"
+	"io"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 )
@@ -43,7 +46,11 @@ func (v *Fake) Stat(path string) (os.FileInfo, error) {
 
 	return &FakeFile{
 		name:   foundEntry,
-		length: 20 * 1024 * 1024,
+		length: 12,
 		mode:   0777,
 	}, nil
+}
+
+func (v *Fake) Open(path string) (io.ReadCloser, error) {
+	return ioutil.NopCloser(bytes.NewReader([]byte("Hello World!"))), nil
 }

@@ -1,6 +1,8 @@
 package vfs
 
 import (
+	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"strings"
@@ -35,10 +37,23 @@ func (v *File) Ls(path string) ([]string, error) {
 func (v *File) Stat(path string) (os.FileInfo, error) {
 	path = "/" + strings.TrimLeft(path, "/")
 
+	fmt.Println("WILL PERFORM STAT ON :", v.basePath+path)
+
 	stat, err := os.Stat(v.basePath + path)
 	if err != nil {
 		return nil, err
 	}
 
 	return stat, nil
+}
+
+func (v *File) Open(path string) (io.ReadCloser, error) {
+	path = "/" + strings.TrimLeft(path, "/")
+
+	f, err := os.Open(v.basePath + path)
+	if err != nil {
+		return nil, err
+	}
+
+	return f, nil
 }

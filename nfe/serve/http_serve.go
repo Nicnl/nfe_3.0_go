@@ -55,10 +55,13 @@ func routineMeasureSpeed(speedChannel chan time.Duration, t *transfer.Transfer) 
 		}
 
 		if measureTime > averageTime {
-			t.CurrentSpeed = int64(float64(sentPackets*t.BufferSize) / (float64(measureTime) / float64(time.Second)))
-			fmt.Println("B/s =>", t.CurrentSpeed)
-			fmt.Println("KB/s =>", t.CurrentSpeed/1000)
-			fmt.Println("MB/s =>", t.CurrentSpeed/1000/1000)
+			//t.CurrentSpeed = int64(float64(sentPackets*t.BufferSize) / (float64(measureTime) / float64(time.Second)))
+			//fmt.Println("B/s =>", t.CurrentSpeed)
+			//fmt.Println("KB/s =>", t.CurrentSpeed/1000)
+			//fmt.Println("MB/s =>", t.CurrentSpeed/1000/1000)
+
+			t.CurrentSpeedMeasureTime = measureTime
+			t.CurrentSpeedSentPackets = sentPackets
 
 			measureTime = 0
 			sentPackets = 0

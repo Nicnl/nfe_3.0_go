@@ -26,7 +26,6 @@ type Transfer struct {
 	CurrentState           uint8
 
 	// Informations immutables
-
 	ClientIP      string
 	StartDate     time.Time
 	Url           string
@@ -36,6 +35,10 @@ type Transfer struct {
 	FilePath      string
 	SectionLength int64
 	BufferSize    int64
+
+	// Informations internes
+	CurrentSpeedSentPackets int64
+	CurrentSpeedMeasureTime time.Duration
 }
 
 func (t *Transfer) SetSpeedLimit(speedLimit int64) {

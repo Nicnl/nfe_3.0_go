@@ -43,7 +43,7 @@ func main() {
 
 		t, ok := transfers[guid]
 		if !ok {
-			panic(fmt.Errorf("unknown transfer with guid '%d'", guid))
+			panic(fmt.Errorf("unknown transfer with guid '%s'", guid))
 		}
 
 		t.SetSpeedLimit(speedLimit)
@@ -82,7 +82,7 @@ func main() {
 			if info.IsDir() {
 				output.Dirs[rawFile] = crypt.PathEncode(vfsPath)
 			} else {
-				output.Files[rawFile] = crypt.PathEncodeExpirable(vfsPath, time.Now().Add(time.Hour).Unix(), time.Now().Unix())
+				output.Files[rawFile] = crypt.PathEncodeExpirable(vfsPath, time.Second*30, time.Now())
 			}
 		}
 
@@ -90,7 +90,7 @@ func main() {
 	})
 
 	routerApi.GET("/ls/:path", func(c *gin.Context) {
-		path, err := crypt.Find(c.Param("path"), time.Now().Unix(), env.Vfs)
+		path, err := crypt.Find(c.Param("path"), time.Now(), env.Vfs)
 		if err != nil {
 			c.Status(http.StatusInternalServerError)
 			fmt.Fprintln(c.Writer, err)
@@ -127,7 +127,7 @@ func main() {
 			if info.IsDir() {
 				output.Dirs[rawFile] = crypt.PathEncode(vfsPath)
 			} else {
-				output.Files[rawFile] = crypt.PathEncodeExpirable(vfsPath, time.Now().Add(time.Hour).Unix(), time.Now().Unix())
+				output.Files[rawFile] = crypt.PathEncodeExpirable(vfsPath, time.Second*30, time.Now())
 			}
 		}
 
@@ -135,7 +135,7 @@ func main() {
 	})
 
 	routerDownload.GET("/:path", func(c *gin.Context) {
-		vfsPath, err := crypt.Find(c.Param("path"), time.Now().Unix(), env.Vfs)
+		vfsPath, err := crypt.Find(c.Param("path"), time.Now(), env.Vfs)
 		if err != nil {
 			c.Status(http.StatusInternalServerError)
 			fmt.Fprintln(c.Writer, err)

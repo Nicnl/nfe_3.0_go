@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 )
 
 func pathEncodeRaw(path string) string {
@@ -36,15 +37,17 @@ func PathEncode(path string) string {
 	return b.String()
 }
 
-func PathEncodeExpirable(path string, duration int64, since int64) string {
+func PathEncodeExpirable(path string, duration time.Duration, since time.Time) string {
+	limitTimestamp := since.Add(duration).Unix()
+
 	//fmt.Println("since+duration =", since+duration)
-	sinceStr := strconv.FormatInt(since+duration, 16)
+	sinceStr := strconv.FormatInt(limitTimestamp, 16)
 
 	//decodedPath := pathEncodeRaw(path)
 	//fmt.Println("decodedPath =", decodedPath)
 
 	var b strings.Builder
-	encodedPath := HexEncode(pathEncodeRaw(path), GlobUnique([]byte(fmt.Sprintf("%d", duration+since))))
+	encodedPath := HexEncode(pathEncodeRaw(path), GlobUnique([]byte(fmt.Sprintf("%d", limitTimestamp))))
 	//fmt.Println("encodedPath key =", GlobUnique([]byte(fmt.Sprintf("%d", duration+since))))
 
 	b.WriteString(encodedPath)
@@ -113,7 +116,7 @@ func subFind(currentPath string, searched string, v vfs.Vfs) (string, error) {
 	return "", fmt.Errorf("no entry matching for hash '%s' in path '%s", searched, currentPath)
 }
 
-func Find(path string, timeLimit int64, v vfs.Vfs) (string, error) {
+func Find(path string, timeLimit time.Time, v vfs.Vfs) (string, error) {
 	if !CheckHash(path) {
 		return "", fmt.Errorf("the checksum is invalid for the following path '%s'", path)
 	}
@@ -147,8 +150,9 @@ func Find(path string, timeLimit int64, v vfs.Vfs) (string, error) {
 		}
 		//fmt.Println("since =", since)
 
-		if timeLimit > since {
-			return "", fmt.Errorf("time limit is reached, path valid until '%d', given time limit is '%d', diff is '%d'", since, timeLimit, timeLimit-since)
+		if timeLimit.Unix() > since {
+			//return "", fmt.Errorf("time limit is reached, path valid until '%d', given time limit is '%d', diff is '%d'", since, timeLimit.Unix(), timeLimit.Unix() - since)
+			return "", fmt.Errorf("link expired")
 		}
 
 		encodedPathKey := GlobUnique([]byte(fmt.Sprintf("%d", since)))

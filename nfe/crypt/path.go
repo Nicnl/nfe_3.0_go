@@ -29,6 +29,8 @@ func pathEncodeRaw(path string) string {
 }
 
 func PathEncode(path string) string {
+	// Todo: ajouter limite de bande passante
+
 	var b strings.Builder
 
 	b.WriteString(pathEncodeRaw(path))
@@ -38,6 +40,8 @@ func PathEncode(path string) string {
 }
 
 func PathEncodeExpirable(path string, duration time.Duration, since time.Time) string {
+	// Todo: ajouter limite de bande passante
+
 	limitTimestamp := since.Add(duration).Unix()
 
 	//fmt.Println("since+duration =", since+duration)
@@ -117,6 +121,8 @@ func subFind(currentPath string, searched string, v vfs.Vfs) (string, error) {
 }
 
 func FindTimeLimitIgnorable(path string, timeLimit time.Time, v vfs.Vfs, ignoreTimeLimit bool) (string, error) {
+	// Todo: ajouter limite de bande passante
+
 	if !CheckHash(path) {
 		return "", fmt.Errorf("the checksum is invalid for the following path '%s'", path)
 	}

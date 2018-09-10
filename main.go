@@ -33,7 +33,7 @@ func main() {
 		c.JSON(http.StatusOK, transfers)
 	})
 
-	routerApi.GET("/transfer/:guid/set_speed_limit/:speed_limit", func(c *gin.Context) {
+	routerApi.GET("/transfer/:guid/set_speed_limit/:speed_limit", func(c *gin.Context) { // Todo: en faire un patch avec les données en JSON
 		guid := c.Param("guid")
 
 		speedLimit, err := strconv.ParseInt(c.Param("speed_limit"), 10, 64)
@@ -146,7 +146,7 @@ func main() {
 			Path string `json:"path"`
 		}
 
-		out.Path = crypt.PathEncodeExpirable(path, 30*time.Minute, time.Now())
+		out.Path = crypt.PathEncodeExpirable(path, 30*time.Minute, time.Now()) // Todo: déplacer paramètre de durée vers ?GET + ajouter limite de bande passante
 
 		c.JSON(http.StatusOK, &out)
 	})

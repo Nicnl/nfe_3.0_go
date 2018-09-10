@@ -82,7 +82,7 @@ func main() {
 			if info.IsDir() {
 				output.Dirs[rawFile] = crypt.PathEncode(vfsPath)
 			} else {
-				output.Files[rawFile] = crypt.PathEncodeExpirable(vfsPath, time.Second*30, time.Now())
+				output.Files[rawFile] = crypt.PathEncodeExpirable(vfsPath, 15*time.Minute, time.Now())
 			}
 		}
 
@@ -127,7 +127,7 @@ func main() {
 			if info.IsDir() {
 				output.Dirs[rawFile] = crypt.PathEncode(vfsPath)
 			} else {
-				output.Files[rawFile] = crypt.PathEncodeExpirable(vfsPath, time.Second*30, time.Now())
+				output.Files[rawFile] = crypt.PathEncodeExpirable(vfsPath, 15*time.Minute, time.Now())
 			}
 		}
 

@@ -51,6 +51,89 @@ func main() {
 		fmt.Fprintln(c.Writer, "OK")
 	})
 
+	routerApi.GET("/ls/", func(c *gin.Context) {
+		rawFiles, err := env.Vfs.Ls("/")
+		if err != nil {
+			c.Status(http.StatusInternalServerError)
+			fmt.Fprintln(c.Writer, err)
+			return
+		}
+
+		var output struct {
+			Path  string            `json:"path"`
+			Dirs  map[string]string `json:"dirs"`
+			Files map[string]string `json:"files"`
+		}
+
+		output.Dirs = make(map[string]string)
+		output.Files = make(map[string]string)
+
+		output.Path = "/"
+		for _, rawFile := range rawFiles {
+			vfsPath := "/" + rawFile
+
+			info, err := env.Vfs.Stat(vfsPath)
+			if err != nil {
+				c.Status(http.StatusInternalServerError)
+				fmt.Fprintln(c.Writer, err)
+				return
+			}
+
+			if info.IsDir() {
+				output.Dirs[rawFile] = crypt.PathEncode(vfsPath)
+			} else {
+				output.Files[rawFile] = crypt.PathEncodeExpirable(vfsPath, time.Now().Add(time.Hour).Unix(), time.Now().Unix())
+			}
+		}
+
+		c.JSON(http.StatusOK, &output)
+	})
+
+	routerApi.GET("/ls/:path", func(c *gin.Context) {
+		path, err := crypt.Find(c.Param("path"), time.Now().Unix(), env.Vfs)
+		if err != nil {
+			c.Status(http.StatusInternalServerError)
+			fmt.Fprintln(c.Writer, err)
+			return
+		}
+
+		rawFiles, err := env.Vfs.Ls(path)
+		if err != nil {
+			c.Status(http.StatusInternalServerError)
+			fmt.Fprintln(c.Writer, err)
+			return
+		}
+
+		var output struct {
+			Path  string            `json:"path"`
+			Dirs  map[string]string `json:"dirs"`
+			Files map[string]string `json:"files"`
+		}
+
+		output.Dirs = make(map[string]string)
+		output.Files = make(map[string]string)
+
+		output.Path = path
+		for _, rawFile := range rawFiles {
+			vfsPath := path + "/" + rawFile
+
+			info, err := env.Vfs.Stat(vfsPath)
+			if err != nil {
+				c.Status(http.StatusInternalServerError)
+				fmt.Fprintln(c.Writer, err)
+				return
+			}
+
+			if info.IsDir() {
+				output.Dirs[rawFile] = crypt.PathEncode(vfsPath)
+			} else {
+				output.Files[rawFile] = crypt.PathEncodeExpirable(vfsPath, time.Now().Add(time.Hour).Unix(), time.Now().Unix())
+			}
+		}
+
+		c.JSON(http.StatusOK, &output)
+	})
+
 	routerDownload.GET("/:path", func(c *gin.Context) {
 		vfsPath, err := crypt.Find(c.Param("path"), time.Now().Unix(), env.Vfs)
 		if err != nil {

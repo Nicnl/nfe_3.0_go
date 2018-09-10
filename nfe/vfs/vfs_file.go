@@ -1,7 +1,6 @@
 package vfs
 
 import (
-	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
@@ -36,8 +35,6 @@ func (v *File) Ls(path string) ([]string, error) {
 
 func (v *File) Stat(path string) (os.FileInfo, error) {
 	path = "/" + strings.TrimLeft(path, "/")
-
-	fmt.Println("WILL PERFORM STAT ON :", v.basePath+path)
 
 	stat, err := os.Stat(v.basePath + path)
 	if err != nil {

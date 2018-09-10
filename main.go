@@ -82,7 +82,7 @@ func main() {
 			if info.IsDir() {
 				output.Dirs[rawFile] = crypt.PathEncode(vfsPath)
 			} else {
-				output.Files[rawFile] = crypt.PathEncodeExpirable(vfsPath, 15*time.Minute, time.Now())
+				output.Files[rawFile] = crypt.PathEncodeExpirable(vfsPath, 1*time.Second, time.Now())
 			}
 		}
 
@@ -127,11 +127,28 @@ func main() {
 			if info.IsDir() {
 				output.Dirs[rawFile] = crypt.PathEncode(vfsPath)
 			} else {
-				output.Files[rawFile] = crypt.PathEncodeExpirable(vfsPath, 15*time.Minute, time.Now())
+				output.Files[rawFile] = crypt.PathEncodeExpirable(vfsPath, 1*time.Second, time.Now())
 			}
 		}
 
 		c.JSON(http.StatusOK, &output)
+	})
+
+	routerApi.GET("/gen/:path", func(c *gin.Context) {
+		path, err := crypt.FindTimeLimitIgnorable(c.Param("path"), time.Now(), env.Vfs, true)
+		if err != nil {
+			c.Status(http.StatusInternalServerError)
+			fmt.Fprintln(c.Writer, err)
+			return
+		}
+
+		var out struct {
+			Path string `json:"path"`
+		}
+
+		out.Path = crypt.PathEncodeExpirable(path, 30*time.Minute, time.Now())
+
+		c.JSON(http.StatusOK, &out)
 	})
 
 	routerDownload.GET("/:path", func(c *gin.Context) {

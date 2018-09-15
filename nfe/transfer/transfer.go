@@ -18,7 +18,7 @@ const (
 )
 
 type Transfer struct {
-	Guid uuid.UUID
+	Guid uuid.UUID `json:"guid"`
 
 	// Données changeantes
 	CurrentSpeed           int64         `json:"current_speed"`

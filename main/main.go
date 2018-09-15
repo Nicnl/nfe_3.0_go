@@ -53,6 +53,19 @@ func main() {
 		c.JSON(http.StatusOK, transfers)
 	})
 
+	routerApi.DELETE("/transfer/:guid/", func(c *gin.Context) {
+		guid := c.Param("guid")
+
+		t, ok := transfers[guid]
+		if !ok {
+			c.String(http.StatusNotFound, "unknown transfer guid")
+			return
+		}
+
+		t.ShouldInterrupt = true
+		c.Status(http.StatusNoContent)
+	})
+
 	routerApi.GET("/transfer/:guid/set_speed_limit/:speed_limit", func(c *gin.Context) { // Todo: en faire un patch avec les données en JSON
 		guid := c.Param("guid")
 
@@ -63,7 +76,8 @@ func main() {
 
 		t, ok := transfers[guid]
 		if !ok {
-			panic(fmt.Errorf("unknown transfer with guid '%s'", guid))
+			c.String(http.StatusNotFound, "unknown transfer guid")
+			return
 		}
 
 		t.SetSpeedLimit(speedLimit)

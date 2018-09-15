@@ -5,6 +5,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"io"
 	"mime"
+	"net"
 	"net/http"
 	"nfe_3.0_go/nfe/json_time"
 	"nfe_3.0_go/nfe/transfer"
@@ -26,26 +27,37 @@ func (env *Env) sendHeaders(c *gin.Context, t *transfer.Transfer) {
 	}))
 }
 
-func (env *Env) routineReadDisk(readerChannel chan []byte, f io.Reader, bufferSize int64) {
+func (env *Env) routineReadDisk(readerChannel chan []byte, f io.Reader, t *transfer.Transfer) {
 	defer func() {
 		recover()
 		fmt.Println("Disk reader goroutine has terminated")
 	}()
+
+	var bufferSize = t.BufferSize
 
 	for {
 		b := make([]byte, bufferSize)
 
 		readBytes, err := f.Read(b)
 		if err != nil {
+			t.CurrentState = transfer.StateInterruptedServer
 			close(readerChannel)
 			return
 		}
 
-		readerChannel <- b[:readBytes]
+		for {
+			select {
+			case readerChannel <- b[:readBytes]:
+				break
+			case <-time.After(averageTime):
+				fmt.Println("disk read goroutine is stuck")
+				continue
+			}
+		}
 	}
 }
 
-func (env *Env) routineMeasureSpeed(speedChannel chan time.Duration, t *transfer.Transfer) {
+func (env *Env) routineMeasureSpeed(speedChannel chan time.Duration, t *transfer.Transfer, c *gin.Context) {
 	defer func() {
 		recover()
 		fmt.Println("Speed calculator goroutine has terminated")
@@ -75,15 +87,34 @@ func (env *Env) routineMeasureSpeed(speedChannel chan time.Duration, t *transfer
 			measureTime = 0
 			sentPackets = 0
 		}
+
+		if t.ShouldInterrupt {
+			t.CurrentState = transfer.StateInterruptedAdmin
+			close(speedChannel)
+
+			defer c.Request.Body.Close()
+
+			conn, _, err := c.Writer.Hijack()
+			if err != nil {
+				return
+			}
+
+			conn.(*net.TCPConn).SetLinger(0)
+			conn.(*net.TCPConn).CloseRead()
+			conn.(*net.TCPConn).CloseWrite()
+			defer conn.Close()
+
+			return
+		}
 	}
 }
 
 func (env *Env) ServeFile(c *gin.Context, t *transfer.Transfer) {
 	// 1] Defer pour tout bien fermer proprement
-	defer c.Request.Body.Close()
-	defer func(t *transfer.Transfer) {
-		t.EndDate = json_time.JsonTime(time.Now())
-	}(t)
+	defer func() {
+		defer func() { recover() }()
+		c.Request.Body.Close()
+	}()
 
 	t.StartDate = json_time.JsonTime(time.Now())
 
@@ -95,11 +126,17 @@ func (env *Env) ServeFile(c *gin.Context, t *transfer.Transfer) {
 	// 2] Defer pour informer le Transfer
 	defer func() {
 		// Todo: informer le Transfer
+		t.EndDate = json_time.JsonTime(time.Now())
 
 		if err := recover(); err != nil {
 			fmt.Println("Http main serving goroutine has terminated forcefully:", err)
+
+			if t.CurrentState != transfer.StateTransferring && t.CurrentState != transfer.StateFinished {
+				t.CurrentState = transfer.StateInterruptedServer
+			}
 		} else {
 			fmt.Println("Http main serving goroutine has terminated gracefully")
+			t.CurrentState = transfer.StateFinished
 		}
 	}()
 
@@ -108,6 +145,7 @@ func (env *Env) ServeFile(c *gin.Context, t *transfer.Transfer) {
 	// Ouverture et obtention des infos du fichier
 	f, err := env.Vfs.Open(t.FilePath)
 	if err != nil {
+		t.CurrentState = transfer.StateInterruptedServer
 		panic(err)
 	}
 	defer f.Close()
@@ -117,12 +155,13 @@ func (env *Env) ServeFile(c *gin.Context, t *transfer.Transfer) {
 
 	// Lancement de la routine de lecture du disque
 	readerChannel := make(chan []byte, 100)
-	go env.routineReadDisk(readerChannel, f, t.BufferSize)
+	defer close(readerChannel)
+	go env.routineReadDisk(readerChannel, f, t)
 
 	// Lancement de la routine de mesure de vitesse
 	speedChannel := make(chan time.Duration)
 	defer close(speedChannel)
-	go env.routineMeasureSpeed(speedChannel, t)
+	go env.routineMeasureSpeed(speedChannel, t, c)
 
 	// Stream des données
 	for {
@@ -137,6 +176,7 @@ func (env *Env) ServeFile(c *gin.Context, t *transfer.Transfer) {
 		diff := time.Since(start)
 
 		if err != nil {
+			t.CurrentState = transfer.StateInterruptedClient
 			close(readerChannel)
 			panic(err)
 			return
@@ -154,4 +194,6 @@ func (env *Env) ServeFile(c *gin.Context, t *transfer.Transfer) {
 			speedChannel <- diff
 		}
 	}
+
+	t.CurrentState = transfer.StateFinished
 }

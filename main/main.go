@@ -11,12 +11,24 @@ import (
 	"nfe_3.0_go/nfe/transfer"
 	"nfe_3.0_go/nfe/vfs"
 	"os"
+	"path/filepath"
 	"strconv"
 	"time"
 )
 
 func startRouter(channel chan error, addr string, handler http.Handler) {
 	channel <- http.ListenAndServe(addr, handler)
+}
+
+type JsonDir struct {
+	Name    string `json:"name"`
+	VfsPath string `json:"path"`
+}
+
+type JsonFile struct {
+	Name    string `json:"name"`
+	VfsPath string `json:"path"`
+	Size    int64  `json:"size"`
 }
 
 func main() {
@@ -94,15 +106,17 @@ func main() {
 		}
 
 		var output struct {
-			Path  string            `json:"path"`
-			Dirs  map[string]string `json:"dirs"`
-			Files map[string]string `json:"files"`
+			Path       string     `json:"path"`
+			ParentPath *string    `json:"parent_path"`
+			Dirs       []JsonDir  `json:"dirs"`
+			Files      []JsonFile `json:"files"`
 		}
 
-		output.Dirs = make(map[string]string)
-		output.Files = make(map[string]string)
-
 		output.Path = "/"
+		output.ParentPath = nil
+		output.Dirs = []JsonDir{}
+		output.Files = []JsonFile{}
+
 		for _, rawFile := range rawFiles {
 			vfsPath := "/" + rawFile
 
@@ -114,9 +128,17 @@ func main() {
 			}
 
 			if info.IsDir() {
-				output.Dirs[rawFile] = crypt.PathEncode(vfsPath)
+				output.Dirs = append(output.Dirs, JsonDir{
+					Name:    rawFile,
+					VfsPath: crypt.PathEncode(vfsPath),
+				})
 			} else {
-				output.Files[rawFile] = crypt.PathEncodeExpirable(vfsPath, 1*time.Minute, time.Now()) // Todo : temps par défaut configurable
+				output.Files = append(output.Files, JsonFile{
+					Name:    rawFile,
+					VfsPath: crypt.PathEncodeExpirable(vfsPath, 1*time.Minute, time.Now()), // Todo : temps par défaut configurable
+					Size:    info.Size(),
+				})
+
 				// Todo: ajouter limite de débit par défaut
 			}
 		}
@@ -140,15 +162,23 @@ func main() {
 		}
 
 		var output struct {
-			Path  string            `json:"path"`
-			Dirs  map[string]string `json:"dirs"`
-			Files map[string]string `json:"files"`
+			Path       string     `json:"path"`
+			ParentPath *string    `json:"parent_path"`
+			Dirs       []JsonDir  `json:"dirs"`
+			Files      []JsonFile `json:"files"`
 		}
 
-		output.Dirs = make(map[string]string)
-		output.Files = make(map[string]string)
-
 		output.Path = path
+		parentPath := filepath.Dir(path)
+		if parentPath == "/" {
+			parentPath = ""
+		} else {
+			parentPath = crypt.PathEncode(parentPath)
+		}
+		output.ParentPath = &parentPath
+		output.Dirs = []JsonDir{}
+		output.Files = []JsonFile{}
+
 		for _, rawFile := range rawFiles {
 			vfsPath := path + "/" + rawFile
 
@@ -160,9 +190,17 @@ func main() {
 			}
 
 			if info.IsDir() {
-				output.Dirs[rawFile] = crypt.PathEncode(vfsPath)
+				output.Dirs = append(output.Dirs, JsonDir{
+					Name:    rawFile,
+					VfsPath: crypt.PathEncode(vfsPath),
+				})
 			} else {
-				output.Files[rawFile] = crypt.PathEncodeExpirable(vfsPath, 1*time.Minute, time.Now()) // Todo : temps par défaut configurable
+				output.Files = append(output.Files, JsonFile{
+					Name:    rawFile,
+					VfsPath: crypt.PathEncodeExpirable(vfsPath, 1*time.Minute, time.Now()), // Todo : temps par défaut configurable
+					Size:    info.Size(),
+				})
+
 				// Todo: ajouter limite de débit par défaut
 			}
 		}

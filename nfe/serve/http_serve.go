@@ -122,7 +122,7 @@ func (env *Env) ServeFile(c *gin.Context, t *transfer.Transfer) {
 		}
 
 		start := time.Now()
-		_, err := c.Writer.Write(data)
+		sentBytes, err := c.Writer.Write(data)
 		diff := time.Since(start)
 
 		if err != nil {
@@ -130,6 +130,8 @@ func (env *Env) ServeFile(c *gin.Context, t *transfer.Transfer) {
 			panic(err)
 			return
 		}
+
+		t.Downloaded += int64(sentBytes)
 
 		//fmt.Println("Time:", int64(diff/time.Microsecond), "us")
 		if t.CurrentSpeedLimitDelay != 0 && t.CurrentSpeedLimitDelay > diff {

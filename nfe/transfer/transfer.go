@@ -27,6 +27,7 @@ type Transfer struct {
 	CurrentState           uint8 `json:"current_state"`
 
 	// Informations immutables
+	Downloaded    int64 `json:"downloaded"`
 	ClientIP      string
 	StartDate     time.Time
 	Url           string

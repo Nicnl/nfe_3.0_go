@@ -131,7 +131,7 @@ func (env *Env) ServeFile(c *gin.Context, t *transfer.Transfer) {
 		if err := recover(); err != nil {
 			fmt.Println("Http main serving goroutine has terminated forcefully:", err)
 
-			if t.CurrentState != transfer.StateTransferring && t.CurrentState != transfer.StateFinished {
+			if t.CurrentState == transfer.StateTransferring || t.CurrentState == transfer.StateFinished {
 				t.CurrentState = transfer.StateInterruptedServer
 			}
 		} else {

@@ -203,7 +203,7 @@ func main() {
 
 		// Enregistrement du transfert dans la liste globale
 		transfers[t.Guid.String()] = t
-		defer delete(transfers, t.Guid.String())
+		//defer delete(transfers, t.Guid.String())
 
 		// Envoi du fichier
 		env.ServeFile(c, t)

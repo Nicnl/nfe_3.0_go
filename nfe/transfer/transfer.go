@@ -25,7 +25,8 @@ type Transfer struct {
 	CurrentSpeedLimitDelay time.Duration // Vitesse de DL calculée à partir de CurrentSpeedLimit
 	CurrentSpeedLimit      int64         `json:"current_speed_limit"` // Limite de vitesse de DL brute en octets/s
 	ShouldInterrupt        bool
-	CurrentState           State `json:"current_state"`
+	CurrentState           State                         `json:"current_state"`
+	CurrentTime            json_time.JsonCurrentUnixTime `json:"current_time"`
 
 	// Informations immutables
 	Downloaded    int64 `json:"downloaded"`
@@ -69,6 +70,7 @@ func New(vfs vfs.Vfs, vfsPath string, speedLimit int64, bufferSize int64) (*Tran
 		FileLength:    info.Size(),
 		SectionLength: 0, // Dépends de la requête du client : calculé par la fonction ServeFile
 		BufferSize:    bufferSize,
+		EndDate:       json_time.JsonTime(time.Unix(0, 0)),
 	}
 
 	// Application de la limite de vitesse

@@ -85,7 +85,8 @@ func main() {
 			if info.IsDir() {
 				output.Dirs[rawFile] = crypt.PathEncode(vfsPath)
 			} else {
-				output.Files[rawFile] = crypt.PathEncodeExpirable(vfsPath, 1*time.Second, time.Now())
+				output.Files[rawFile] = crypt.PathEncodeExpirable(vfsPath, 1*time.Minute, time.Now()) // Todo : temps par défaut configurable
+				// Todo: ajouter limite de débit par défaut
 			}
 		}
 
@@ -130,7 +131,8 @@ func main() {
 			if info.IsDir() {
 				output.Dirs[rawFile] = crypt.PathEncode(vfsPath)
 			} else {
-				output.Files[rawFile] = crypt.PathEncodeExpirable(vfsPath, 1*time.Second, time.Now())
+				output.Files[rawFile] = crypt.PathEncodeExpirable(vfsPath, 1*time.Minute, time.Now()) // Todo : temps par défaut configurable
+				// Todo: ajouter limite de débit par défaut
 			}
 		}
 

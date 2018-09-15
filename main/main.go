@@ -12,7 +12,6 @@ import (
 	"nfe_3.0_go/nfe/vfs"
 	"os"
 	"path/filepath"
-	"strconv"
 	"time"
 )
 
@@ -78,12 +77,17 @@ func main() {
 		c.Status(http.StatusNoContent)
 	})
 
-	routerApi.GET("/transfer/:guid/set_speed_limit/:speed_limit", func(c *gin.Context) { // Todo: en faire un patch avec les données en JSON
+	routerApi.PATCH("/transfer/:guid/", func(c *gin.Context) { // Todo: en faire un patch avec les données en JSON
 		guid := c.Param("guid")
 
-		speedLimit, err := strconv.ParseInt(c.Param("speed_limit"), 10, 64)
+		var request struct {
+			SpeedLimit int64 `json:"speed_limit"`
+		}
+
+		err := c.BindJSON(&request)
 		if err != nil {
-			panic(err)
+			c.String(http.StatusBadRequest, "bad request")
+			return
 		}
 
 		t, ok := transfers[guid]
@@ -92,9 +96,8 @@ func main() {
 			return
 		}
 
-		t.SetSpeedLimit(speedLimit)
-		c.Status(http.StatusOK)
-		fmt.Fprintln(c.Writer, "OK")
+		t.SetSpeedLimit(request.SpeedLimit)
+		c.Status(http.StatusNoContent)
 	})
 
 	routerApi.GET("/ls/", func(c *gin.Context) {

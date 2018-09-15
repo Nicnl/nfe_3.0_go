@@ -185,7 +185,7 @@ func (env *Env) ServeFile(c *gin.Context, t *transfer.Transfer) {
 
 		//fmt.Println("Time:", int64(diff/time.Microsecond), "us")
 		if t.CurrentSpeedLimitDelay != 0 && t.CurrentSpeedLimitDelay > diff {
-			timeToWait := (t.CurrentSpeedLimitDelay - diff) * 95 / 100
+			timeToWait := t.CurrentSpeedLimitDelay - diff
 			//fmt.Println("Client was too fast, waiting for", timeToWait/time.Microsecond, "us")
 			time.Sleep(timeToWait)
 			speedChannel <- diff + timeToWait

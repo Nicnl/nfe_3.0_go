@@ -46,12 +46,14 @@ type Transfer struct {
 
 func (t *Transfer) SetSpeedLimit(speedLimit int64) {
 	if speedLimit == 0 {
+		t.CurrentSpeedLimit = 0
 		t.CurrentSpeedLimitDelay = 0
 		return
 	}
 
-	nbPackets := speedLimit / t.BufferSize
-	t.CurrentSpeedLimitDelay = time.Second / time.Duration(nbPackets)
+	nbPackets := float64(speedLimit) / float64(t.BufferSize)
+	t.CurrentSpeedLimitDelay = time.Duration(float64(time.Second) / nbPackets)
+	t.CurrentSpeedLimit = speedLimit
 }
 
 func New(vfs vfs.Vfs, vfsPath string, speedLimit int64, bufferSize int64) (*Transfer, error) {

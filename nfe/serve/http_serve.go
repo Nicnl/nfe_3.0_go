@@ -6,6 +6,7 @@ import (
 	"io"
 	"mime"
 	"net/http"
+	"nfe_3.0_go/nfe/json_time"
 	"nfe_3.0_go/nfe/transfer"
 	"nfe_3.0_go/nfe/vfs"
 	"time"
@@ -80,6 +81,11 @@ func (env *Env) routineMeasureSpeed(speedChannel chan time.Duration, t *transfer
 func (env *Env) ServeFile(c *gin.Context, t *transfer.Transfer) {
 	// 1] Defer pour tout bien fermer proprement
 	defer c.Request.Body.Close()
+	defer func(t *transfer.Transfer) {
+		t.EndDate = json_time.JsonTime(time.Now())
+	}(t)
+
+	t.StartDate = json_time.JsonTime(time.Now())
 
 	// 2] Defer pour informer le Transfer
 	defer func() {

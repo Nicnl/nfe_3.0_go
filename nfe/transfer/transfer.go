@@ -2,6 +2,7 @@ package transfer
 
 import (
 	"github.com/gofrs/uuid"
+	"nfe_3.0_go/nfe/json_time"
 	"nfe_3.0_go/nfe/vfs"
 	"time"
 )
@@ -29,7 +30,8 @@ type Transfer struct {
 	// Informations immutables
 	Downloaded    int64 `json:"downloaded"`
 	ClientIP      string
-	StartDate     time.Time
+	StartDate     json_time.JsonTime `json:"start_date"`
+	EndDate       json_time.JsonTime `json:"end_date"`
 	Url           string
 	UrlExpiration time.Time
 	UrlSpeedLimit int64

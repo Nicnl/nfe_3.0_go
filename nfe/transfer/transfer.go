@@ -13,17 +13,18 @@ const (
 	StateFinished          State = 1
 	StateInterruptedClient State = 2
 	StateInterruptedServer State = 3
+	StateInterruptedAdmin  State = 4
 )
 
 type Transfer struct {
 	Guid uuid.UUID
 
 	// Données changeantes
-	CurrentSpeed           int64
+	CurrentSpeed           int64         `json:"current_speed"`
 	CurrentSpeedLimitDelay time.Duration // Vitesse de DL calculée à partir de CurrentSpeedLimit
-	CurrentSpeedLimit      int64         // Limite de vitesse de DL brute en octets/s
+	CurrentSpeedLimit      int64         `json:"current_speed_limit"` // Limite de vitesse de DL brute en octets/s
 	ShouldInterrupt        bool
-	CurrentState           uint8
+	CurrentState           uint8 `json:"current_state"`
 
 	// Informations immutables
 	ClientIP      string
@@ -31,10 +32,11 @@ type Transfer struct {
 	Url           string
 	UrlExpiration time.Time
 	UrlSpeedLimit int64
-	FileLength    int64
-	FileName      string
+	FileLength    int64  `json:"file_length"`
+	FileName      string `json:"file_name"`
 	FilePath      string
-	SectionLength int64
+	SectionStart  int64 `json:"section_start"`
+	SectionLength int64 `json:"section_length"`
 	BufferSize    int64
 }
 

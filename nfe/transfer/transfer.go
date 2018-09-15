@@ -25,7 +25,7 @@ type Transfer struct {
 	CurrentSpeedLimitDelay time.Duration // Vitesse de DL calculée à partir de CurrentSpeedLimit
 	CurrentSpeedLimit      int64         `json:"current_speed_limit"` // Limite de vitesse de DL brute en octets/s
 	ShouldInterrupt        bool
-	CurrentState           uint8 `json:"current_state"`
+	CurrentState           State `json:"current_state"`
 
 	// Informations immutables
 	Downloaded    int64 `json:"downloaded"`

@@ -87,6 +87,11 @@ func (env *Env) ServeFile(c *gin.Context, t *transfer.Transfer) {
 
 	t.StartDate = json_time.JsonTime(time.Now())
 
+	// Monosection fichier entier
+	t.SectionLength = t.FileLength
+	t.SectionStart = 0
+	t.CurrentState = transfer.StateTransferring
+
 	// 2] Defer pour informer le Transfer
 	defer func() {
 		// Todo: informer le Transfer

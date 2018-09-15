@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"math/rand"
 	"net/http"
 	"nfe_3.0_go/nfe/crypt"
 	"nfe_3.0_go/nfe/serve"
@@ -18,6 +19,8 @@ func startRouter(channel chan error, addr string, handler http.Handler) {
 }
 
 func main() {
+	rand.Seed(time.Now().UnixNano())
+
 	//path := "/vmshare_hub/ISOs/Windows/Windows 10 - 1703/Win10_1703_French_x64.iso"
 
 	routerDownload := gin.Default()
@@ -90,7 +93,7 @@ func main() {
 	})
 
 	routerApi.GET("/ls/:path", func(c *gin.Context) {
-		path, err := crypt.Find(c.Param("path"), time.Now(), env.Vfs)
+		path, _, err := crypt.Find(c.Param("path"), time.Now(), env.Vfs)
 		if err != nil {
 			c.Status(http.StatusInternalServerError)
 			fmt.Fprintln(c.Writer, err)
@@ -135,7 +138,7 @@ func main() {
 	})
 
 	routerApi.GET("/gen/:path", func(c *gin.Context) {
-		path, err := crypt.FindTimeLimitIgnorable(c.Param("path"), time.Now(), env.Vfs, true)
+		path, _, err := crypt.FindTimeLimitIgnorable(c.Param("path"), time.Now(), env.Vfs, true)
 		if err != nil {
 			c.Status(http.StatusInternalServerError)
 			fmt.Fprintln(c.Writer, err)
@@ -152,7 +155,7 @@ func main() {
 	})
 
 	routerDownload.GET("/:path", func(c *gin.Context) {
-		vfsPath, err := crypt.Find(c.Param("path"), time.Now(), env.Vfs)
+		vfsPath, _, err := crypt.Find(c.Param("path"), time.Now(), env.Vfs)
 		if err != nil {
 			c.Status(http.StatusInternalServerError)
 			fmt.Fprintln(c.Writer, err)

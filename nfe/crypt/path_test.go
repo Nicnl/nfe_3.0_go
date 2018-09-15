@@ -1,6 +1,7 @@
 package crypt
 
 import (
+	"math/rand"
 	"nfe_3.0_go/nfe/vfs"
 	"testing"
 	"time"
@@ -139,7 +140,7 @@ var vfsFake = vfs.Fake{
 
 func TestFindWithoutExpiration(t *testing.T) {
 	for path, expected := range checkFind {
-		findPath, err := Find(PathEncode(path), time.Unix(0, 0), &vfsFake)
+		findPath, _, err := Find(PathEncode(path), time.Unix(0, 0), &vfsFake)
 		if err != nil {
 			if expected {
 				t.Error(path, " => ", err)
@@ -153,7 +154,7 @@ func TestFindWithoutExpiration(t *testing.T) {
 func TestFindWithExpiration(t *testing.T) {
 	timestamp := time.Unix(1536285675, 0)
 	for path, expected := range checkFind {
-		findPath, err := Find(PathEncodeExpirable(path, 10, timestamp), timestamp, &vfsFake)
+		findPath, _, err := Find(PathEncodeExpirable(path, 10, timestamp), timestamp, &vfsFake)
 		if err != nil {
 			if expected {
 				t.Error(path, " => ", err)
@@ -166,17 +167,92 @@ func TestFindWithExpiration(t *testing.T) {
 
 func TestFindExpirationReached(t *testing.T) {
 	timestamp := time.Unix(1536285675, 0)
-	var duration time.Duration = 10 * time.Second
+	var duration = 10 * time.Second
 	for path, expected := range checkFind {
 		if !expected {
 			continue
 		}
 
-		findPath, err := Find(PathEncodeExpirable(path, duration, timestamp), timestamp.Add(duration).Add(time.Second), &vfsFake)
+		findPath, _, err := Find(PathEncodeExpirable(path, duration, timestamp), timestamp.Add(duration).Add(time.Second), &vfsFake)
 		if err == nil {
 			t.Errorf("err should not be nil")
 		} else if findPath != "" {
 			t.Errorf("findPath should be empty, got '%s'", findPath)
+		}
+	}
+}
+
+func TestAddBandwidthLimit(t *testing.T) {
+	rand.Seed(4063542065746508042)
+	var expectedLimit int64 = 12345678987654321
+
+	for path := range checkFind {
+		encodedPath := PathEncode(path)
+		bandwidthPath := AddBandwidthLimit(encodedPath, expectedLimit)
+
+		decodedLink, limit, err := GetBandwidthLimit(bandwidthPath)
+		if err != nil {
+			t.Errorf("err should be nil: %s", err)
+		}
+		if limit != expectedLimit {
+			t.Errorf("expected limit to be '%d', got '%d'", expectedLimit, limit)
+		}
+		if encodedPath != decodedLink {
+			t.Errorf("expected limit to be '%s', got '%s'", encodedPath, decodedLink)
+		}
+	}
+}
+
+func TestFindWithBandwidthLimitNotExpirable(t *testing.T) {
+	timestamp := time.Unix(1536285675, 0)
+	var duration = 10 * time.Second
+	rand.Seed(4063542065746508042)
+	var expectedLimit int64 = 12345678987654321
+
+	for path, expected := range checkFind {
+		if !expected {
+			continue
+		}
+
+		encodedPath := PathEncode(path)
+		bandwidthPath := AddBandwidthLimit(encodedPath, expectedLimit)
+
+		vfsPath, bandwidthLimit, err := Find(bandwidthPath, timestamp.Add(duration), &vfsFake)
+		if err != nil {
+			t.Errorf("err should be nil: %s", err)
+		}
+		if expectedLimit != bandwidthLimit {
+			t.Errorf("expected limit to be '%d', got '%d'", expectedLimit, bandwidthLimit)
+		}
+		if path != vfsPath {
+			t.Errorf("expected limit to be '%s', got '%s'", vfsPath, path)
+		}
+	}
+}
+
+func TestFindWithBandwidthLimitExpirable(t *testing.T) {
+	timestamp := time.Unix(1536285675, 0)
+	var duration = 10 * time.Second
+	rand.Seed(4063542065746508042)
+	var expectedLimit int64 = 123456789
+
+	for path, expected := range checkFind {
+		if !expected {
+			continue
+		}
+
+		encodedPath := PathEncodeExpirable(path, duration, timestamp)
+		bandwidthPath := AddBandwidthLimit(encodedPath, expectedLimit)
+
+		vfsPath, bandwidthLimit, err := Find(bandwidthPath, timestamp, &vfsFake)
+		if err != nil {
+			t.Errorf("err should be nil: %s", err)
+		}
+		if expectedLimit != bandwidthLimit {
+			t.Errorf("expected limit to be '%d', got '%d'", expectedLimit, bandwidthLimit)
+		}
+		if path != vfsPath {
+			t.Errorf("expected limit to be '%s', got '%s'", vfsPath, path)
 		}
 	}
 }

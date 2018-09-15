@@ -2,6 +2,7 @@ package crypt
 
 import (
 	"fmt"
+	"math/rand"
 	"nfe_3.0_go/nfe/vfs"
 	"path/filepath"
 	"strconv"
@@ -117,14 +118,18 @@ func subFind(currentPath string, searched string, v vfs.Vfs) (string, error) {
 		}
 	}
 
-	return "", fmt.Errorf("no entry matching for hash '%s' in path '%s", searched, currentPath)
+	return "", fmt.Errorf("no entry matching for hash '%s' in path '%s'", searched, currentPath)
 }
 
-func FindTimeLimitIgnorable(path string, timeLimit time.Time, v vfs.Vfs, ignoreTimeLimit bool) (string, error) {
-	// Todo: ajouter limite de bande passante
+func FindTimeLimitIgnorable(path string, timeLimit time.Time, v vfs.Vfs, ignoreTimeLimit bool) (string, int64, error) {
+	pathWithoutBandwidth, bandwidthLimit, err := GetBandwidthLimit(path)
+	if err != nil {
+		return "", -1, err
+	}
+	path = pathWithoutBandwidth
 
 	if !CheckHash(path) {
-		return "", fmt.Errorf("the checksum is invalid for the following path '%s'", path)
+		return "", -1, fmt.Errorf("the checksum is invalid for the following path '%s'", path)
 	}
 
 	decodedPath := ""
@@ -152,13 +157,13 @@ func FindTimeLimitIgnorable(path string, timeLimit time.Time, v vfs.Vfs, ignoreT
 
 		since, err := strconv.ParseInt(sinceStr, 16, 64)
 		if err != nil {
-			return "", err
+			return "", -1, err
 		}
 		//fmt.Println("since =", since)
 
 		if !ignoreTimeLimit && timeLimit.Unix() > since {
-			//return "", fmt.Errorf("time limit is reached, path valid until '%d', given time limit is '%d', diff is '%d'", since, timeLimit.Unix(), timeLimit.Unix() - since)
-			return "", fmt.Errorf("link expired")
+			return "", -1, fmt.Errorf("time limit is reached, path valid until '%d', given time limit is '%d', diff is '%d'", since, timeLimit.Unix(), timeLimit.Unix()-since)
+			return "", -1, fmt.Errorf("link expired")
 		}
 
 		encodedPathKey := GlobUnique([]byte(fmt.Sprintf("%d", since)))
@@ -171,7 +176,7 @@ func FindTimeLimitIgnorable(path string, timeLimit time.Time, v vfs.Vfs, ignoreT
 	}
 
 	if len(decodedPath) < 32 {
-		return "", fmt.Errorf("the provided path is too short")
+		return "", -1, fmt.Errorf("the provided path is too short")
 	}
 
 	filenameHash = decodedPath[len(decodedPath)-32:]
@@ -180,9 +185,87 @@ func FindTimeLimitIgnorable(path string, timeLimit time.Time, v vfs.Vfs, ignoreT
 	decodedPath = HexDecode(decodedPath[:len(decodedPath)-32], filenameHash)
 	//fmt.Println("decodedPath", decodedPath)
 
-	return subFind("/", decodedPath+filenameHash, v)
+	subFindStr, err := subFind("/", decodedPath+filenameHash, v)
+	if err != nil {
+		return "", -1, err
+	}
+
+	return subFindStr, bandwidthLimit, nil
 }
 
-func Find(path string, timeLimit time.Time, v vfs.Vfs) (string, error) {
+func Find(path string, timeLimit time.Time, v vfs.Vfs) (string, int64, error) {
 	return FindTimeLimitIgnorable(path, timeLimit, v, false)
+}
+
+var bandwidthLimitSeparator = "ghijklmnopqrstuvwxyz" // Tout sauf abcdef
+
+func AddBandwidthLimit(link string, limit int64) string {
+	timelimitSeparatorIndex := strings.Index(link, "-")
+
+	linkGlob := GlobUnique([]byte(link))
+	//fmt.Println("link =", link)
+	//fmt.Println("linkGlob =", linkGlob)
+	//fmt.Println("linkGlob =", linkGlob)
+
+	limitStr := HexEncode(strconv.FormatInt(limit, 16), linkGlob)
+	limitGlob := GlobUnique([]byte(limitStr))
+
+	link = HexEncode(link, limitGlob)
+
+	encodedLink := link + string(bandwidthLimitSeparator[rand.Intn(len(bandwidthLimitSeparator))]) + limitGlob + limitStr
+
+	if timelimitSeparatorIndex >= 0 {
+		encodedLink = encodedLink[:timelimitSeparatorIndex] + "-" + encodedLink[timelimitSeparatorIndex+1:]
+	}
+
+	//fmt.Println("___________________________")
+	return encodedLink
+}
+
+func GetBandwidthLimit(link string) (string, int64, error) {
+	separatorIndex := strings.IndexAny(link, bandwidthLimitSeparator)
+	if separatorIndex == -1 {
+		return link, 0, nil // No bandwidth limit whatsoever, input link is unchanged
+	}
+
+	timelimitSeparatorIndex := strings.Index(link, "-")
+	if timelimitSeparatorIndex >= 0 {
+		link = link[:timelimitSeparatorIndex] + "-" + link[timelimitSeparatorIndex+1:]
+	}
+
+	linkPart := link[:separatorIndex]
+	limitGlobExpected := link[separatorIndex+1 : separatorIndex+1+32]
+	limitStr := link[separatorIndex+1+32:]
+
+	//fmt.Println("linkPart =", linkPart)
+	//fmt.Println("limitGlobExpected =", limitGlobExpected)
+	//fmt.Println("limitStr =", limitStr)
+	//fmt.Println()
+
+	limitGlob := GlobUnique([]byte(limitStr))
+	if limitGlob != limitGlobExpected {
+		return "", -1, fmt.Errorf("the expected limitGlob is not equal to the given limitGlob")
+	}
+	//fmt.Println("limitGlob =", limitGlob)
+
+	link = HexDecode(linkPart, limitGlob)
+	if timelimitSeparatorIndex >= 0 {
+		link = link[:timelimitSeparatorIndex] + "-" + link[timelimitSeparatorIndex+1:]
+	}
+
+	//fmt.Println("link =", link)
+	linkGlob := GlobUnique([]byte(link))
+	//fmt.Println("link =", link)
+	//fmt.Println("linkGlob =", linkGlob)
+	//fmt.Println()
+
+	limitStr = HexDecode(limitStr, linkGlob)
+	limit, err := strconv.ParseInt(limitStr, 16, 64)
+	if err != nil {
+		return "", -1, err
+	}
+
+	//fmt.Println("limit =", limit)
+
+	return link, limit, nil
 }

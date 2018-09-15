@@ -45,15 +45,7 @@ func (env *Env) routineReadDisk(readerChannel chan []byte, f io.Reader, t *trans
 			return
 		}
 
-		for {
-			select {
-			case readerChannel <- b[:readBytes]:
-				break
-			case <-time.After(averageTime):
-				fmt.Println("disk read goroutine is stuck")
-				continue
-			}
-		}
+		readerChannel <- b[:readBytes]
 	}
 }
 
@@ -131,7 +123,7 @@ func (env *Env) ServeFile(c *gin.Context, t *transfer.Transfer) {
 		if err := recover(); err != nil {
 			fmt.Println("Http main serving goroutine has terminated forcefully:", err)
 
-			if t.CurrentState == transfer.StateTransferring || t.CurrentState == transfer.StateFinished {
+			if t.CurrentState == transfer.StateTransferring {
 				t.CurrentState = transfer.StateInterruptedServer
 			}
 		} else {
@@ -172,17 +164,24 @@ func (env *Env) ServeFile(c *gin.Context, t *transfer.Transfer) {
 		}
 
 		start := time.Now()
-		sentBytes, err := c.Writer.Write(data)
+		_, err := c.Writer.Write(data)
 		diff := time.Since(start)
+		t.Downloaded += int64(len(data))
 
 		if err != nil {
-			t.CurrentState = transfer.StateInterruptedClient
-			close(readerChannel)
+			fmt.Println("ERROR WHEN WRITING LAST DATA")
+			fmt.Println("t.Downloaded = ", t.Downloaded)
+			fmt.Println("t.SectionLength = ", t.SectionLength)
+			fmt.Println("err =", err)
+			if t.Downloaded >= t.SectionLength {
+				t.CurrentState = transfer.StateFinished
+			} else {
+				t.CurrentState = transfer.StateInterruptedClient
+			}
+
 			panic(err)
 			return
 		}
-
-		t.Downloaded += int64(sentBytes)
 
 		//fmt.Println("Time:", int64(diff/time.Microsecond), "us")
 		if t.CurrentSpeedLimitDelay != 0 && t.CurrentSpeedLimitDelay > diff {

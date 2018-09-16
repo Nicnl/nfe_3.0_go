@@ -249,7 +249,7 @@ func main() {
 	})
 
 	routerDownload.GET("/:path", func(c *gin.Context) {
-		vfsPath, _, err := crypt.Find(c.Param("path"), time.Now(), env.Vfs)
+		vfsPath, speedLimit, err := crypt.Find(c.Param("path"), time.Now(), env.Vfs)
 		if err != nil {
 			c.Status(http.StatusInternalServerError)
 			fmt.Fprintln(c.Writer, err)
@@ -257,7 +257,7 @@ func main() {
 		}
 
 		// Initialisation d'un nouveau transfert
-		t, err := transfer.New(env.Vfs, vfsPath, 0, 20*1024)
+		t, err := transfer.New(env.Vfs, vfsPath, speedLimit, 20*1024)
 		if err != nil {
 			panic(err)
 		}

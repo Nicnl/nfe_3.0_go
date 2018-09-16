@@ -133,12 +133,11 @@ func detectRanges(c *gin.Context, t *transfer.Transfer, info os.FileInfo) (int64
 		c.Header("Content-Type", mime.FormatMediaType(mimelist.GetMime(t.FileName), map[string]string{
 			"name": t.FileName,
 		}))
+		c.Header("Content-Disposition", mime.FormatMediaType("inline", map[string]string{
+			"filename": t.FileName,
+		}))
 
-		// Permet de forcer le téléchargement
-		//c.Header("Content-Disposition", mime.FormatMediaType("attachment", map[string]string{
-		//	"filename": t.FileName,
-		//}))
-		//c.Header("Content-Description", "File Transfer")
+		c.Header("Content-Description", "File Transfer")
 
 		return 0, t.FileLength, true // Todo : vérifier range de fin
 	}
@@ -203,7 +202,11 @@ func detectRanges(c *gin.Context, t *transfer.Transfer, info os.FileInfo) (int64
 	c.Header("Content-Type", mime.FormatMediaType(mimelist.GetMime(t.FileName), map[string]string{
 		"name": t.FileName,
 	}))
+	c.Header("Content-Disposition", mime.FormatMediaType("attachment", map[string]string{
+		"filename": t.FileName,
+	}))
 	c.Header("Content-Range", fmt.Sprintf("bytes %d-%d/%d", rangeStart, rangeEnd, t.FileLength))
+	c.Header("Content-Description", "File Transfer")
 	//fmt.Println("Ranges =",  fmt.Sprintf("bytes %d-%d/%d", rangeStart, rangeEnd, t.FileLength))
 
 	return rangeStart, t.SectionLength, true

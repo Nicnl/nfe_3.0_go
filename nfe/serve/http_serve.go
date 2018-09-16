@@ -20,7 +20,8 @@ import (
 const averageTime = 333 * time.Millisecond
 
 type Env struct {
-	Vfs vfs.Vfs
+	Vfs       vfs.Vfs
+	Transfers map[string]*transfer.Transfer
 }
 
 func (env *Env) routineReadDisk(readerChannel chan []byte, f io.Reader, t *transfer.Transfer, until int64) {

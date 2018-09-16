@@ -96,17 +96,17 @@ func main() {
 			return
 		}
 
-		var bufferSize int64 = 8 * 1024
+		var bufferSize int64 = 50 * 1024
 
-		if bufferSize > request.SpeedLimit {
+		if request.SpeedLimit > 0 && bufferSize > request.SpeedLimit {
 			if request.SpeedLimit >= 4 {
 				bufferSize = request.SpeedLimit / 4
 			} else {
 				bufferSize = 1
 			}
-			t.ChangeBufferSize(bufferSize)
 		}
 
+		t.ChangeBufferSize(bufferSize)
 		t.SetSpeedLimit(request.SpeedLimit)
 		c.Status(http.StatusNoContent)
 	})
@@ -267,9 +267,9 @@ func main() {
 			return
 		}
 
-		var bufferSize int64 = 8 * 1024
+		var bufferSize int64 = 50 * 1024
 
-		if speedLimit >= 4 && bufferSize > speedLimit {
+		if speedLimit > 0 && bufferSize > speedLimit {
 			if speedLimit >= 4 {
 				bufferSize = speedLimit / 4
 			} else {

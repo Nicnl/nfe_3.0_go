@@ -167,17 +167,17 @@ func (env *Env) ServeFile(c *gin.Context, t *transfer.Transfer) {
 		t.Downloaded += int64(len(data))
 
 		if err != nil {
-			fmt.Println("ERROR WHEN WRITING LAST DATA")
-			fmt.Println("t.Downloaded = ", t.Downloaded)
-			fmt.Println("t.SectionLength = ", t.SectionLength)
-			fmt.Println("err =", err)
+			//fmt.Println("ERROR WHEN WRITING LAST DATA")
+			//fmt.Println("t.Downloaded = ", t.Downloaded)
+			//fmt.Println("t.SectionLength = ", t.SectionLength)
+			//fmt.Println("err =", err)
 			if t.Downloaded >= t.SectionLength {
 				t.CurrentState = transfer.StateFinished
 			} else {
 				t.CurrentState = transfer.StateInterruptedClient
+				panic(err)
 			}
 
-			panic(err)
 			return
 		}
 

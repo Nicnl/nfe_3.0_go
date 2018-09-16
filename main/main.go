@@ -98,7 +98,7 @@ func main() {
 
 		var bufferSize int64 = 50 * 1024
 
-		if request.SpeedLimit > 0 && bufferSize > request.SpeedLimit {
+		if request.SpeedLimit > 0 && bufferSize*4 > request.SpeedLimit {
 			if request.SpeedLimit >= 4 {
 				bufferSize = request.SpeedLimit / 4
 			} else {
@@ -269,7 +269,7 @@ func main() {
 
 		var bufferSize int64 = 50 * 1024
 
-		if speedLimit > 0 && bufferSize > speedLimit {
+		if speedLimit > 0 && bufferSize*4 > speedLimit {
 			if speedLimit >= 4 {
 				bufferSize = speedLimit / 4
 			} else {

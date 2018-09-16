@@ -44,6 +44,11 @@ type Transfer struct {
 	BufferSize    int64
 }
 
+func (t *Transfer) ChangeBufferSize(bufferSize int64) {
+	t.BufferSize = bufferSize
+	t.SetSpeedLimit(t.CurrentSpeedLimit)
+}
+
 func (t *Transfer) SetSpeedLimit(speedLimit int64) {
 	if speedLimit == 0 {
 		t.CurrentSpeedLimit = 0

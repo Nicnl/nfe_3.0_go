@@ -33,10 +33,8 @@ func (env *Env) routineReadDisk(readerChannel chan []byte, f io.Reader, t *trans
 		fmt.Println("Disk reader goroutine has terminated")
 	}()
 
-	var bufferSize = t.BufferSize
-
 	for {
-		b := make([]byte, bufferSize)
+		b := make([]byte, t.BufferSize)
 
 		readBytes, err := f.Read(b)
 		if err != nil {

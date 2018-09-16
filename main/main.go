@@ -96,6 +96,13 @@ func main() {
 			return
 		}
 
+		var bufferSize int64 = 8 * 1024
+
+		if request.SpeedLimit >= 4 && bufferSize > request.SpeedLimit {
+			bufferSize = request.SpeedLimit / 4
+			t.ChangeBufferSize(bufferSize)
+		}
+
 		t.SetSpeedLimit(request.SpeedLimit)
 		c.Status(http.StatusNoContent)
 	})
@@ -256,8 +263,14 @@ func main() {
 			return
 		}
 
+		var bufferSize int64 = 8 * 1024
+
+		if speedLimit >= 4 && bufferSize > speedLimit {
+			bufferSize = speedLimit / 4
+		}
+
 		// Initialisation d'un nouveau transfert
-		t, err := transfer.New(env.Vfs, vfsPath, speedLimit, 20*1024)
+		t, err := transfer.New(env.Vfs, vfsPath, speedLimit, bufferSize)
 		if err != nil {
 			panic(err)
 		}

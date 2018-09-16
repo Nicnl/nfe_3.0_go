@@ -54,3 +54,7 @@ func (v *Fake) Stat(path string) (os.FileInfo, error) {
 func (v *Fake) Open(path string) (io.ReadCloser, error) {
 	return ioutil.NopCloser(bytes.NewReader([]byte("Hello World!"))), nil
 }
+
+func (v *Fake) OpenSeek(path string, atSeek int64) (io.ReadCloser, error) {
+	return ioutil.NopCloser(bytes.NewReader([]byte("Hello World!"))), nil
+}

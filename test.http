@@ -1,0 +1,27 @@
+GET https://old.manadja.nicnl.com/bundles/AnimuManadja/libraries/jquery-2.2.3/js/jquery-2.2.3.min.js
+Range: bytes=0-1
+
+###
+
+
+GET https://isos.download.nicnl.com/81fb15dc8f9c3a7de38a92720b33e03353/fr_office_professional_plus_2010_with_sp1_x86_x64_dvd_730410.iso
+Range: bytes=2770592329-
+
+###
+
+
+
+GET https://isos.download.nicnl.com/7844f90bdd69df25eda0c20b01466d53f5/test.txt
+Range: bytes=0-5
+
+###
+
+GET http://vmshare.nicnl.com:9000/4c32e137bda11645345f13000c73c65fe4
+Range: bytes=0-1
+
+###
+
+GET http://vmshare.nicnl.com:9000/fad3ff9cd6b52cfc25f5d748583000d6-b6ccba90688b33087c47fad58b664b30a
+Range: bytes=2770655165-2770659327
+
+###

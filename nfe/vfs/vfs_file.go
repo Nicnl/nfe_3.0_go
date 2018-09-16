@@ -54,3 +54,19 @@ func (v *File) Open(path string) (io.ReadCloser, error) {
 
 	return f, nil
 }
+
+func (v *File) OpenSeek(path string, atSeek int64) (io.ReadCloser, error) {
+	path = "/" + strings.TrimLeft(path, "/")
+
+	f, err := os.Open(v.basePath + path)
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = f.Seek(atSeek, 0)
+	if err != nil {
+		return nil, err
+	}
+
+	return f, nil
+}

@@ -98,8 +98,12 @@ func main() {
 
 		var bufferSize int64 = 8 * 1024
 
-		if request.SpeedLimit >= 4 && bufferSize > request.SpeedLimit {
-			bufferSize = request.SpeedLimit / 4
+		if bufferSize > request.SpeedLimit {
+			if request.SpeedLimit >= 4 {
+				bufferSize = request.SpeedLimit / 4
+			} else {
+				bufferSize = 1
+			}
 			t.ChangeBufferSize(bufferSize)
 		}
 
@@ -266,7 +270,11 @@ func main() {
 		var bufferSize int64 = 8 * 1024
 
 		if speedLimit >= 4 && bufferSize > speedLimit {
-			bufferSize = speedLimit / 4
+			if speedLimit >= 4 {
+				bufferSize = speedLimit / 4
+			} else {
+				bufferSize = 1
+			}
 		}
 
 		// Initialisation d'un nouveau transfert

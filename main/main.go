@@ -211,8 +211,20 @@ func main() {
 		c.JSON(http.StatusOK, &output)
 	})
 
-	routerApi.GET("/gen/:path", func(c *gin.Context) {
-		path, _, err := crypt.FindTimeLimitIgnorable(c.Param("path"), time.Now(), env.Vfs, true)
+	routerApi.POST("/gen/", func(c *gin.Context) {
+		var request struct {
+			Path     string `json:"path"`
+			Duration int64  `json:"duration"`
+			Speed    int64  `json:"speed"`
+		}
+
+		err := c.BindJSON(&request)
+		if err != nil {
+			c.String(http.StatusBadRequest, "bad request")
+			return
+		}
+
+		path, _, err := crypt.FindTimeLimitIgnorable(request.Path, time.Now(), env.Vfs, true)
 		if err != nil {
 			c.Status(http.StatusInternalServerError)
 			fmt.Fprintln(c.Writer, err)
@@ -223,7 +235,15 @@ func main() {
 			Path string `json:"path"`
 		}
 
-		out.Path = crypt.PathEncodeExpirable(path, 30*time.Minute, time.Now()) // Todo: déplacer paramètre de durée vers ?GET + ajouter limite de bande passante
+		if request.Duration > 0 {
+			out.Path = crypt.PathEncodeExpirable(path, time.Duration(request.Duration)*time.Second, time.Now())
+		} else {
+			out.Path = crypt.PathEncode(path)
+		}
+
+		if request.Speed > 0 {
+			out.Path = crypt.AddBandwidthLimit(out.Path, request.Speed)
+		}
 
 		c.JSON(http.StatusOK, &out)
 	})

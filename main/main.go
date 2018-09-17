@@ -53,10 +53,17 @@ func main() {
 	routerApi.GET("/ls/", env.RouteAuthLsRoot)
 	routerApi.GET("/ls/:path", env.RouteAuthLs)
 
+	routerApi.GET("/guest/:basepath/ls", env.RouteGuestLsRoot)
+	routerApi.GET("/guest/:basepath/ls/", env.RouteGuestLsRoot)
+	routerApi.GET("/guest/:basepath/ls/:path", env.RouteGuestLs)
+	routerApi.GET("/guest/:basepath/ls/:path/", env.RouteGuestLs)
+
 	routerApi.POST("/gen/", env.RouteAuthRegenLink)
 
 	routerDownload.GET("/:path", env.RouteDownload)
 	routerDownload.GET("/:path/:osef", env.RouteDownload)
+
+	routerDownload.GET("/:path/:osef/guest/:realpath", env.RouteDownloadGuest)
 
 	channel := make(chan error)
 	go startRouter(channel, ":9000", routerDownload)

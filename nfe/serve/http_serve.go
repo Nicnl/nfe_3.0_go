@@ -213,7 +213,7 @@ func detectRanges(c *gin.Context, t *transfer.Transfer, info os.FileInfo) (int64
 	return rangeStart, t.SectionLength, true
 }
 
-func (env *Env) ServeFile(c *gin.Context, t *transfer.Transfer) {
+func (env *Env) ServeFile(c *gin.Context, t *transfer.Transfer, subVfs vfs.Vfs) {
 	// 1] Defer pour tout bien fermer proprement
 	defer func() {
 		defer func() { recover() }()
@@ -245,7 +245,7 @@ func (env *Env) ServeFile(c *gin.Context, t *transfer.Transfer) {
 	//fmt.Println("Has began to serve file")
 
 	// Ouverture et obtention des infos du fichier
-	info, err := env.Vfs.Stat(t.FilePath)
+	info, err := subVfs.Stat(t.FilePath)
 	if err != nil {
 		t.CurrentState = transfer.StateInterruptedServer
 		panic(err)
@@ -261,9 +261,9 @@ func (env *Env) ServeFile(c *gin.Context, t *transfer.Transfer) {
 
 	var f io.ReadCloser
 	if fileSeek == 0 {
-		f, err = env.Vfs.Open(t.FilePath)
+		f, err = subVfs.Open(t.FilePath)
 	} else {
-		f, err = env.Vfs.OpenSeek(t.FilePath, fileSeek)
+		f, err = subVfs.OpenSeek(t.FilePath, fileSeek)
 	}
 	if err != nil {
 		t.CurrentState = transfer.StateInterruptedServer

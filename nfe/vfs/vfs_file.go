@@ -70,3 +70,13 @@ func (v *File) OpenSeek(path string, atSeek int64) (io.ReadCloser, error) {
 
 	return f, nil
 }
+
+func (v *File) SubVfs(path string) Vfs {
+	if path == "" {
+		return v
+	}
+
+	path = "/" + strings.TrimLeft(path, "/")
+
+	return New(v.basePath + path)
+}

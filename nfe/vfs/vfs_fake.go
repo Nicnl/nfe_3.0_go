@@ -58,3 +58,7 @@ func (v *Fake) Open(path string) (io.ReadCloser, error) {
 func (v *Fake) OpenSeek(path string, atSeek int64) (io.ReadCloser, error) {
 	return ioutil.NopCloser(bytes.NewReader([]byte("Hello World!"))), nil
 }
+
+func (v *Fake) SubVfs(path string) Vfs {
+	return v
+}

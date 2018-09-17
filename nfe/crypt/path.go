@@ -233,6 +233,10 @@ func GetBandwidthLimit(link string) (string, int64, error) {
 		link = link[:timelimitSeparatorIndex] + "-" + link[timelimitSeparatorIndex+1:]
 	}
 
+	if separatorIndex+1+32 > len(link) {
+		return "", -1, fmt.Errorf("the provided link does contains a bandwidth limit separator character, but it's length is too short")
+	}
+
 	linkPart := link[:separatorIndex]
 	limitGlobExpected := link[separatorIndex+1 : separatorIndex+1+32]
 	limitStr := link[separatorIndex+1+32:]

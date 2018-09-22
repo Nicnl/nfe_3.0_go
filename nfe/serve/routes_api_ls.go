@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"nfe_3.0_go/nfe/crypt"
 	"path/filepath"
+	"runtime"
+	"strings"
 	"time"
 )
 
@@ -81,10 +83,19 @@ func (env *Env) routeLs(c *gin.Context, basePath string, path string, key string
 		Files      []jsonFile `json:"files"`
 	}
 
+	if runtime.GOOS == "windows" {
+		path = strings.Replace(path, "\\", "/", -1)
+	}
+
 	output.Path = path
 
 	if path != "/" {
 		parentPath := filepath.Dir(path)
+
+		if runtime.GOOS == "windows" {
+			parentPath = strings.Replace(parentPath, "\\", "/", -1)
+		}
+
 		if parentPath == "/" {
 			parentPath = ""
 		} else {

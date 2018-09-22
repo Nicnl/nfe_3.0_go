@@ -12,6 +12,7 @@ import (
 	"nfe_3.0_go/nfe/mimelist"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 )
 
@@ -146,7 +147,10 @@ func PopulateRouter(router *gin.Engine, scanPath string, expiration int) error {
 			return nil
 		}
 
-		path = strings.TrimPrefix(strings.Replace(path, "\\", "/", -1), "/")
+		if runtime.GOOS == "windows" {
+			path = strings.Replace(path, "\\", "/", -1)
+		}
+		path = strings.TrimPrefix(path, "/")
 
 		if path == "static/config.js" {
 			return nil

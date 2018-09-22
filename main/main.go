@@ -47,6 +47,7 @@ func main() {
 	}
 
 	routerApi.GET("/transfers", env.RouteTransfersList)
+	routerApi.DELETE("/transfers", env.RouteTransfersClear)
 	routerApi.DELETE("/transfer/:guid/", env.RouteTransferInterrupt)
 	routerApi.PATCH("/transfer/:guid/", env.RouteTransferChangeSpeed)
 
@@ -64,6 +65,7 @@ func main() {
 	routerDownload.GET("/:path/:osef", env.RouteDownload)
 
 	routerDownload.GET("/:path/:osef/guest/:realpath", env.RouteDownloadGuest)
+	routerDownload.GET("/:path/:osef/guest/:realpath/:osef2", env.RouteDownloadGuest)
 
 	channel := make(chan error)
 	go startRouter(channel, ":9000", routerDownload)

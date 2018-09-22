@@ -3,10 +3,16 @@ package serve
 import (
 	"github.com/gin-gonic/gin"
 	"net/http"
+	"nfe_3.0_go/nfe/transfer"
 )
 
 func (env *Env) RouteTransfersList(c *gin.Context) {
 	c.JSON(http.StatusOK, env.Transfers)
+}
+
+func (env *Env) RouteTransfersClear(c *gin.Context) {
+	env.Transfers = make(map[string]*transfer.Transfer)
+	c.Status(http.StatusNoContent)
 }
 
 func (env *Env) RouteTransferInterrupt(c *gin.Context) {

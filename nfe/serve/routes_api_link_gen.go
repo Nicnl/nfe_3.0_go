@@ -9,16 +9,30 @@ import (
 )
 
 func (env *Env) RouteAuthRegenLink(c *gin.Context) {
+	claims, err := env.extractJwt(c)
+	if err != nil {
+		panic(err)
+	}
+
 	var request struct {
 		Path     string `json:"path"`
 		Duration int64  `json:"duration"`
 		Speed    int64  `json:"speed"`
 	}
 
-	err := c.BindJSON(&request)
+	err = c.BindJSON(&request)
 	if err != nil {
 		c.String(http.StatusBadRequest, "bad request")
 		return
+	}
+
+	if !claims.UserAdmin {
+		if request.Duration > env.NonAdminTimeLimit {
+			request.Duration = env.NonAdminTimeLimit
+		}
+		if request.Speed > env.NonAdminSpeedLimit {
+			request.Speed = env.NonAdminSpeedLimit
+		}
 	}
 
 	path, _, err := crypt.FindTimeLimitIgnorable(request.Path, time.Now(), env.Vfs, true)

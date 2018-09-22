@@ -54,10 +54,14 @@ func main() {
 	}
 
 	env := serve.Env{
-		Vfs:             vfs.New("/vmshare_hub/ISOs/"),
-		Transfers:       map[string]*transfer.Transfer{},
-		AuthBlobRegular: authBlobRegular,
-		AuthBlobAdmin:   authBlobAdmin,
+		Vfs:                vfs.New("/vmshare_hub/ISOs/"),
+		Transfers:          map[string]*transfer.Transfer{},
+		AuthBlobRegular:    authBlobRegular,
+		AuthBlobAdmin:      authBlobAdmin,
+		NonAdminSpeedLimit: 524136,
+		NonAdminTimeLimit:  302400,
+		DefaultSpeedLimit:  0,
+		DefaultTimeLimit:   15 * 60,
 	}
 
 	routerApi.POST("/auth", env.RouteAuth)

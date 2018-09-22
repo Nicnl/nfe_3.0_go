@@ -20,11 +20,15 @@ import (
 const averageTime = 333 * time.Millisecond
 
 type Env struct {
-	AuthBlobAdmin   []byte
-	AuthBlobRegular []byte
-	JwtSecret       []byte
-	Vfs             vfs.Vfs
-	Transfers       map[string]*transfer.Transfer
+	AuthBlobAdmin      []byte
+	AuthBlobRegular    []byte
+	JwtSecret          []byte
+	Vfs                vfs.Vfs
+	Transfers          map[string]*transfer.Transfer
+	NonAdminTimeLimit  int64
+	NonAdminSpeedLimit int64
+	DefaultSpeedLimit  int64
+	DefaultTimeLimit   int64
 }
 
 func (env *Env) routineReadDisk(readerChannel chan []byte, f io.Reader, t *transfer.Transfer, until int64) {

@@ -23,13 +23,13 @@ func (env *Env) RouteAuth(c *gin.Context) {
 	}
 
 	userAdmin := true
-	maxBandwidth := 0
-	maxDuration := 0 * time.Second
+	var maxBandwidth int64 = 0
+	var maxDuration int64 = 0
 	err = bcrypt.CompareHashAndPassword(env.AuthBlobAdmin, []byte(req.User+" / YOLO MDR PATATOTO :D / "+req.Pass))
 	if err != nil {
 		userAdmin = false
-		maxBandwidth = 1000000 // Todo: variable d'environnement
-		maxDuration = 6 * time.Hour
+		maxBandwidth = env.NonAdminSpeedLimit
+		maxDuration = env.NonAdminTimeLimit
 		err = bcrypt.CompareHashAndPassword(env.AuthBlobRegular, []byte(req.User+" / YOLO MDR PATATOTO :D / "+req.Pass))
 		if err != nil {
 			c.Status(http.StatusUnauthorized)
@@ -45,7 +45,7 @@ func (env *Env) RouteAuth(c *gin.Context) {
 		"login_time":    loginTime,
 		"user_admin":    userAdmin,
 		"max_bandwidth": maxBandwidth,
-		"max_duration":  int64(maxDuration / time.Second),
+		"max_duration":  maxDuration,
 	}
 	// Sign and get the complete encoded token as a string
 	tokenString, err := token.SignedString(env.JwtSecret)
@@ -58,7 +58,7 @@ func (env *Env) RouteAuth(c *gin.Context) {
 		"login_time":    loginTime,
 		"user_admin":    userAdmin,
 		"max_bandwidth": maxBandwidth,
-		"max_duration":  int64(maxDuration / time.Second),
+		"max_duration":  maxDuration,
 	})
 }
 

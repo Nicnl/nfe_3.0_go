@@ -102,26 +102,26 @@ func main() {
 	crypt.GlobUrlList = env.GlobUrlList
 	crypt.GlobUrlDown = env.GlobUrlDown
 
-	routerApi.POST("/auth", env.RouteAuth)
-	routerApi.POST("/hash", env.RequestHash)
-	routerApi.GET("/is_configured", env.CheckAuthConfigured)
+	routerApi.POST("/api/auth", env.RouteAuth)
+	routerApi.POST("/api/hash", env.RequestHash)
+	routerApi.GET("/api/is_configured", env.CheckAuthConfigured)
 
-	routerApi.GET("/guest/:basepath/ls", env.RouteGuestLsRoot)
-	routerApi.GET("/guest/:basepath/ls/", env.RouteGuestLsRoot)
-	routerApi.GET("/guest/:basepath/ls/:path", env.RouteGuestLs)
-	routerApi.GET("/guest/:basepath/ls/:path/", env.RouteGuestLs)
+	routerApi.GET("/api/guest/:basepath/ls", env.RouteGuestLsRoot)
+	routerApi.GET("/api/guest/:basepath/ls/", env.RouteGuestLsRoot)
+	routerApi.GET("/api/guest/:basepath/ls/:path", env.RouteGuestLs)
+	routerApi.GET("/api/guest/:basepath/ls/:path/", env.RouteGuestLs)
 	routerApiPrivate := routerApi.Group("/")
 	routerApiPrivate.Use(jwt.Auth(string(env.JwtSecret)))
 	{
-		routerApiPrivate.GET("/transfers", env.RouteTransfersList)
-		routerApiPrivate.DELETE("/transfers", env.RouteTransfersClear)
-		routerApiPrivate.DELETE("/transfer/:guid/", env.RouteTransferInterrupt)
-		routerApiPrivate.PATCH("/transfer/:guid/", env.RouteTransferChangeSpeed)
+		routerApiPrivate.GET("/api/transfers", env.RouteTransfersList)
+		routerApiPrivate.DELETE("/api/transfers", env.RouteTransfersClear)
+		routerApiPrivate.DELETE("/api/transfer/:guid/", env.RouteTransferInterrupt)
+		routerApiPrivate.PATCH("/api/transfer/:guid/", env.RouteTransferChangeSpeed)
 
-		routerApiPrivate.GET("/ls/", env.RouteAuthLsRoot)
-		routerApiPrivate.GET("/ls/:path", env.RouteAuthLs)
+		routerApiPrivate.GET("/api/ls/", env.RouteAuthLsRoot)
+		routerApiPrivate.GET("/api/ls/:path", env.RouteAuthLs)
 
-		routerApiPrivate.POST("/gen/", env.RouteAuthRegenLink)
+		routerApiPrivate.POST("/api/gen/", env.RouteAuthRegenLink)
 	}
 
 	err = in_memory_content_serving.PopulateRouter(routerApi, "web", 15*60)

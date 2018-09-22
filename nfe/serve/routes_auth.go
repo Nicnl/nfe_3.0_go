@@ -80,7 +80,7 @@ func (env *Env) RequestHash(c *gin.Context) {
 		return
 	}
 
-	hash, err := bcrypt.GenerateFromPassword([]byte(req.User+" / "+string(env.PasswordHashSalt)+" / "+req.Pass), 12)
+	hash, err := bcrypt.GenerateFromPassword([]byte(req.User+req.Pass+" / "+string(env.PasswordHashSalt)), 12)
 	if err != nil {
 		c.String(http.StatusInternalServerError, "Error while hashing")
 		return
@@ -109,12 +109,13 @@ func (env *Env) RouteAuth(c *gin.Context) {
 	userAdmin := true
 	var maxBandwidth int64 = 0
 	var maxDuration int64 = 0
-	err = bcrypt.CompareHashAndPassword(env.AuthBlobAdmin, []byte(req.User+" / "+string(env.PasswordHashSalt)+" / "+req.Pass))
+	fmt.Println("BLOB IS:", req.User+" / "+string(env.PasswordHashSalt)+" / "+req.Pass)
+	err = bcrypt.CompareHashAndPassword(env.AuthBlobAdmin, []byte(req.User+req.Pass+" / "+string(env.PasswordHashSalt)))
 	if err != nil {
 		userAdmin = false
 		maxBandwidth = env.NonAdminSpeedLimit
 		maxDuration = env.NonAdminTimeLimit
-		err = bcrypt.CompareHashAndPassword(env.AuthBlobRegular, []byte(req.User+" / "+string(env.PasswordHashSalt)+" / "+req.Pass))
+		err = bcrypt.CompareHashAndPassword(env.AuthBlobRegular, []byte(req.User+req.Pass+" / "+string(env.PasswordHashSalt)))
 		if err != nil {
 			c.Status(http.StatusUnauthorized)
 			return

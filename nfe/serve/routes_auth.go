@@ -10,6 +10,79 @@ import (
 	"time"
 )
 
+func (env *Env) CheckAuthConfigured(c *gin.Context) {
+	var response struct {
+		IsConfigured bool     `json:"is_configured"`
+		Message      []string `json:"messages"`
+	}
+
+	response.IsConfigured = true
+	response.Message = make([]string, 0)
+
+	if len(env.JwtSecret) == 0 {
+		response.Message = append(response.Message, "La variable d'environnement JWT_SECRET est vide : doit contenir une secret pour l'encryption. (remplir au pif)")
+		response.IsConfigured = false
+	}
+
+	if len(env.BasePath) == 0 {
+		response.Message = append(response.Message, "La variable d'environnement BASE_PATH est vide : doit contenir le chemin du partage de fichiers.")
+		response.IsConfigured = false
+	}
+
+	if len(env.GlobSalt) == 0 {
+		response.Message = append(response.Message, "La variable d'environnement GLOB_SALT_LEGACY est vide : doit contenir une secret pour l'encryption. (remplir au pif)")
+		response.IsConfigured = false
+	}
+
+	if len(env.GlobUrlList) == 0 {
+		response.Message = append(response.Message, "La variable d'environnement GLOB_SALT_LIST est vide : doit contenir une secret pour l'encryption. (remplir au pif)")
+		response.IsConfigured = false
+	}
+
+	if len(env.GlobUrlDown) == 0 {
+		response.Message = append(response.Message, "La variable d'environnement GLOB_SALT_DOWN est vide : doit contenir une secret pour l'encryption. (remplir au pif)")
+		response.IsConfigured = false
+	}
+
+	if len(env.AuthBlobAdmin) == 0 {
+		response.Message = append(response.Message, "La variable d'environnement PW_HASH_ADMIN est vide : doit contenir le hash d'authentification l'admin (voir page de génération)")
+		response.IsConfigured = false
+	}
+
+	if len(env.AuthBlobRegular) == 0 {
+		response.Message = append(response.Message, "La variable d'environnement PW_HASH_USER est vide : doit contenir le hash d'authentification d'un utilisateur normal (voir page de génération)")
+		response.IsConfigured = false
+	}
+
+	c.JSON(http.StatusOK, &response)
+}
+
+func (env *Env) RequestHash(c *gin.Context) {
+	var req struct {
+		User string `json:"user"`
+		Pass string `json:"pass"`
+	}
+
+	err := c.BindJSON(&req)
+	if err != nil {
+		c.String(http.StatusBadRequest, "Bad Request")
+		return
+	}
+
+	hash, err := bcrypt.GenerateFromPassword([]byte(req.User+" / "+string(env.PasswordHashSalt)+" / "+req.Pass), 12)
+	if err != nil {
+		c.String(http.StatusInternalServerError, "Error while hashing")
+		return
+	}
+
+	var response struct {
+		Hash string `json:"hash"`
+	}
+
+	response.Hash = string(hash)
+	c.JSON(http.StatusOK, &response)
+}
+
 func (env *Env) RouteAuth(c *gin.Context) {
 	var req struct {
 		User string `json:"user" binding:"required"`
@@ -25,12 +98,12 @@ func (env *Env) RouteAuth(c *gin.Context) {
 	userAdmin := true
 	var maxBandwidth int64 = 0
 	var maxDuration int64 = 0
-	err = bcrypt.CompareHashAndPassword(env.AuthBlobAdmin, []byte(req.User+" / YOLO MDR PATATOTO :D / "+req.Pass))
+	err = bcrypt.CompareHashAndPassword(env.AuthBlobAdmin, []byte(req.User+" / "+string(env.PasswordHashSalt)+" / "+req.Pass))
 	if err != nil {
 		userAdmin = false
 		maxBandwidth = env.NonAdminSpeedLimit
 		maxDuration = env.NonAdminTimeLimit
-		err = bcrypt.CompareHashAndPassword(env.AuthBlobRegular, []byte(req.User+" / YOLO MDR PATATOTO :D / "+req.Pass))
+		err = bcrypt.CompareHashAndPassword(env.AuthBlobRegular, []byte(req.User+" / "+string(env.PasswordHashSalt)+" / "+req.Pass))
 		if err != nil {
 			c.Status(http.StatusUnauthorized)
 			return

@@ -5,13 +5,14 @@ import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/contrib/jwt"
 	"github.com/gin-gonic/gin"
-	"golang.org/x/crypto/bcrypt"
 	"math/rand"
 	"net/http"
+	"nfe_3.0_go/nfe/crypt"
 	"nfe_3.0_go/nfe/serve"
 	"nfe_3.0_go/nfe/transfer"
 	"nfe_3.0_go/nfe/vfs"
 	"os"
+	"strconv"
 	"time"
 )
 
@@ -43,30 +44,65 @@ func main() {
 		MaxAge:           12 * time.Hour,
 	}))
 
-	authBlobRegular, err := bcrypt.GenerateFromPassword([]byte("user"+" / YOLO MDR PATATOTO :D / "+"user"), 11)
-	if err != nil {
-		panic(err)
+	var err error
+
+	var nonAdminSpeedLimit int64 = 0
+	if v := os.Getenv("NON_ADMIN_SPEED_LIMIT"); v != "" {
+		nonAdminSpeedLimit, err = strconv.ParseInt(v, 10, 64)
+		if err != nil {
+			fmt.Println("Error while parsing NON_ADMIN_SPEED_LIMIT as an int64")
+		}
 	}
 
-	authBlobAdmin, err := bcrypt.GenerateFromPassword([]byte("admin"+" / YOLO MDR PATATOTO :D / "+"admin"), 11)
-	if err != nil {
-		panic(err)
+	var nonAdminTimeLimit int64 = 6 * 60 * 60
+	if v := os.Getenv("NON_ADMIN_TIME_LIMIT"); v != "" {
+		nonAdminTimeLimit, err = strconv.ParseInt(v, 10, 64)
+		if err != nil {
+			fmt.Println("Error while parsing NON_ADMIN_TIME_LIMIT as an int64")
+		}
+	}
+
+	var defaultSpeedLimit int64 = 0
+	if v := os.Getenv("DEFAULT_SPEED_LIMIT"); v != "" {
+		defaultSpeedLimit, err = strconv.ParseInt(v, 10, 64)
+		if err != nil {
+			fmt.Println("Error while parsing DEFAULT_SPEED_LIMIT as an int64")
+		}
+	}
+
+	var defaultTimeLimit int64 = 15 * 60
+	if v := os.Getenv("DEFAULT_SPEED_LIMIT"); v != "" {
+		defaultTimeLimit, err = strconv.ParseInt(v, 10, 64)
+		if err != nil {
+			fmt.Println("Error while parsing DEFAULT_SPEED_LIMIT as an int64")
+		}
 	}
 
 	env := serve.Env{
-		Vfs:       vfs.New("/vmshare_hub/ISOs/"),
+		Vfs:       vfs.New(os.Getenv("BASE_PATH")),
 		Transfers: map[string]*transfer.Transfer{},
 
-		// Todo: aller chercher ça dans des variables d'environnement
-		AuthBlobRegular:    authBlobRegular,
-		AuthBlobAdmin:      authBlobAdmin,
-		NonAdminSpeedLimit: 524136,
-		NonAdminTimeLimit:  302400,
-		DefaultSpeedLimit:  0,
-		DefaultTimeLimit:   15 * 60,
+		BasePath:           os.Getenv("BASE_PATH"),
+		PasswordHashSalt:   []byte("YOLO MDR PATATOTOOTOOOOOO :DDQSDPOIQSDOIUQS NFE NFE NFE NFE 3.0 YOUPI LOL HEHE YOY MDR YOOOY DOIUQSD #{#[[|\\`^`|[{#|`\\=))à)à`" + os.Getenv("JWT_SECRET")),
+		JwtSecret:          []byte(os.Getenv("JWT_SECRET")),
+		AuthBlobRegular:    []byte(os.Getenv("PW_HASH_USER")),
+		AuthBlobAdmin:      []byte(os.Getenv("PW_HASH_ADMIN")),
+		NonAdminSpeedLimit: nonAdminSpeedLimit,
+		NonAdminTimeLimit:  nonAdminTimeLimit,
+		DefaultSpeedLimit:  defaultSpeedLimit,
+		DefaultTimeLimit:   defaultTimeLimit,
+		GlobSalt:           []byte(os.Getenv("GLOB_SALT_LEGACY")),
+		GlobUrlList:        []byte(os.Getenv("GLOB_SALT_LIST")),
+		GlobUrlDown:        []byte(os.Getenv("GLOB_SALT_DOWN")),
 	}
 
+	crypt.GlobSalt = env.GlobSalt
+	crypt.GlobUrlList = env.GlobUrlList
+	crypt.GlobUrlDown = env.GlobUrlDown
+
 	routerApi.POST("/auth", env.RouteAuth)
+	routerApi.POST("/hash", env.RequestHash)
+	routerApi.GET("/is_configured", env.CheckAuthConfigured)
 
 	routerApi.GET("/guest/:basepath/ls", env.RouteGuestLsRoot)
 	routerApi.GET("/guest/:basepath/ls/", env.RouteGuestLsRoot)

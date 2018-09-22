@@ -24,11 +24,16 @@ type Env struct {
 	AuthBlobRegular    []byte
 	JwtSecret          []byte
 	Vfs                vfs.Vfs
+	BasePath           string
+	PasswordHashSalt   []byte
 	Transfers          map[string]*transfer.Transfer
 	NonAdminTimeLimit  int64
 	NonAdminSpeedLimit int64
 	DefaultSpeedLimit  int64
 	DefaultTimeLimit   int64
+	GlobSalt           []byte
+	GlobUrlList        []byte
+	GlobUrlDown        []byte
 }
 
 func (env *Env) routineReadDisk(readerChannel chan []byte, f io.Reader, t *transfer.Transfer, until int64) {

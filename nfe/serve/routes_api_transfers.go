@@ -7,15 +7,50 @@ import (
 )
 
 func (env *Env) RouteTransfersList(c *gin.Context) {
+	claims, err := env.extractJwt(c)
+	if err != nil {
+		panic(err)
+	}
+
+	if !claims.UserAdmin {
+		c.String(http.StatusUnauthorized, "Not authorized")
+		return
+	}
+
 	c.JSON(http.StatusOK, env.Transfers)
 }
 
 func (env *Env) RouteTransfersClear(c *gin.Context) {
-	env.Transfers = make(map[string]*transfer.Transfer)
+	claims, err := env.extractJwt(c)
+	if err != nil {
+		panic(err)
+	}
+
+	if !claims.UserAdmin {
+		c.String(http.StatusUnauthorized, "Not authorized")
+		return
+	}
+
+	for k, v := range env.Transfers {
+		if v.CurrentState != transfer.StateTransferring {
+			delete(env.Transfers, k)
+		}
+	}
+
 	c.Status(http.StatusNoContent)
 }
 
 func (env *Env) RouteTransferInterrupt(c *gin.Context) {
+	claims, err := env.extractJwt(c)
+	if err != nil {
+		panic(err)
+	}
+
+	if !claims.UserAdmin {
+		c.String(http.StatusUnauthorized, "Not authorized")
+		return
+	}
+
 	guid := c.Param("guid")
 
 	t, ok := env.Transfers[guid]
@@ -29,13 +64,23 @@ func (env *Env) RouteTransferInterrupt(c *gin.Context) {
 }
 
 func (env *Env) RouteTransferChangeSpeed(c *gin.Context) {
+	claims, err := env.extractJwt(c)
+	if err != nil {
+		panic(err)
+	}
+
+	if !claims.UserAdmin {
+		c.String(http.StatusUnauthorized, "Not authorized")
+		return
+	}
+
 	guid := c.Param("guid")
 
 	var request struct {
 		SpeedLimit int64 `json:"speed_limit"`
 	}
 
-	err := c.BindJSON(&request)
+	err = c.BindJSON(&request)
 	if err != nil {
 		c.String(http.StatusBadRequest, "bad request")
 		return

@@ -2,6 +2,15 @@
 
 
 [[projects]]
+  name = "github.com/dgrijalva/jwt-go"
+  packages = [
+    ".",
+    "request"
+  ]
+  revision = "06ea1031745cb8b3dab3f6a236daf2b0aa468b7e"
+  version = "v3.2.0"
+
+[[projects]]
   name = "github.com/gin-contrib/cors"
   packages = ["."]
   revision = "cf4846e6a636a76237a28d9286f163c132e841bc"
@@ -12,6 +21,12 @@
   name = "github.com/gin-contrib/sse"
   packages = ["."]
   revision = "22d885f9ecc78bf4ee5d72b937e4bbcdc58e8cae"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/gin-gonic/contrib"
+  packages = ["jwt"]
+  revision = "39cfb9727134fef3120d2458fce5fab14265a46c"
 
 [[projects]]
   name = "github.com/gin-gonic/gin"
@@ -68,6 +83,15 @@
 
 [[projects]]
   branch = "master"
+  name = "golang.org/x/crypto"
+  packages = [
+    "bcrypt",
+    "blowfish"
+  ]
+  revision = "0e37d006457bf46f9e6692014ba72ef82c33022c"
+
+[[projects]]
+  branch = "master"
   name = "golang.org/x/sys"
   packages = ["unix"]
   revision = "917fdcba135dcbaccd57425db91723541b4427c8"
@@ -87,6 +111,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "0e857afe63ce2c8a07aec6686ec45520bdfc36cb143222dde62cb49c47842571"
+  inputs-digest = "ac4e91a2e6aafbd234130d85ab3450d7d4e74386c655462181e084635f091f16"
   solver-name = "gps-cdcl"
   solver-version = 1

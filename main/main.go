@@ -3,7 +3,9 @@ package main
 import (
 	"fmt"
 	"github.com/gin-contrib/cors"
+	"github.com/gin-gonic/contrib/jwt"
 	"github.com/gin-gonic/gin"
+	"golang.org/x/crypto/bcrypt"
 	"math/rand"
 	"net/http"
 	"nfe_3.0_go/nfe/serve"
@@ -41,25 +43,42 @@ func main() {
 		MaxAge:           12 * time.Hour,
 	}))
 
-	env := serve.Env{
-		Vfs:       vfs.New("/vmshare_hub/ISOs/"),
-		Transfers: map[string]*transfer.Transfer{},
+	authBlobRegular, err := bcrypt.GenerateFromPassword([]byte("user"+" / YOLO MDR PATATOTO :D / "+"user"), 11)
+	if err != nil {
+		panic(err)
 	}
 
-	routerApi.GET("/transfers", env.RouteTransfersList)
-	routerApi.DELETE("/transfers", env.RouteTransfersClear)
-	routerApi.DELETE("/transfer/:guid/", env.RouteTransferInterrupt)
-	routerApi.PATCH("/transfer/:guid/", env.RouteTransferChangeSpeed)
+	authBlobAdmin, err := bcrypt.GenerateFromPassword([]byte("admin"+" / YOLO MDR PATATOTO :D / "+"admin"), 11)
+	if err != nil {
+		panic(err)
+	}
 
-	routerApi.GET("/ls/", env.RouteAuthLsRoot)
-	routerApi.GET("/ls/:path", env.RouteAuthLs)
+	env := serve.Env{
+		Vfs:             vfs.New("/vmshare_hub/ISOs/"),
+		Transfers:       map[string]*transfer.Transfer{},
+		AuthBlobRegular: authBlobRegular,
+		AuthBlobAdmin:   authBlobAdmin,
+	}
+
+	routerApi.POST("/auth", env.RouteAuth)
 
 	routerApi.GET("/guest/:basepath/ls", env.RouteGuestLsRoot)
 	routerApi.GET("/guest/:basepath/ls/", env.RouteGuestLsRoot)
 	routerApi.GET("/guest/:basepath/ls/:path", env.RouteGuestLs)
 	routerApi.GET("/guest/:basepath/ls/:path/", env.RouteGuestLs)
+	routerApiPrivate := routerApi.Group("/")
+	routerApiPrivate.Use(jwt.Auth(string(env.JwtSecret)))
+	{
+		routerApiPrivate.GET("/transfers", env.RouteTransfersList)
+		routerApiPrivate.DELETE("/transfers", env.RouteTransfersClear)
+		routerApiPrivate.DELETE("/transfer/:guid/", env.RouteTransferInterrupt)
+		routerApiPrivate.PATCH("/transfer/:guid/", env.RouteTransferChangeSpeed)
 
-	routerApi.POST("/gen/", env.RouteAuthRegenLink)
+		routerApiPrivate.GET("/ls/", env.RouteAuthLsRoot)
+		routerApiPrivate.GET("/ls/:path", env.RouteAuthLs)
+
+		routerApiPrivate.POST("/gen/", env.RouteAuthRegenLink)
+	}
 
 	routerDownload.GET("/:path", env.RouteDownload)
 	routerDownload.GET("/:path/:osef", env.RouteDownload)

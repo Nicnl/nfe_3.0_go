@@ -234,7 +234,6 @@ func (env *Env) ServeFile(c *gin.Context, t *transfer.Transfer, subVfs vfs.Vfs) 
 
 	// 2] Defer pour informer le Transfer
 	defer func() {
-		// Todo: informer le Transfer
 		t.EndDate = json_time.JsonTime(time.Now())
 
 		if err := recover(); err != nil {

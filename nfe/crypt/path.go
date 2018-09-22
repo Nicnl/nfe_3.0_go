@@ -30,8 +30,6 @@ func pathEncodeRaw(path string) string {
 }
 
 func PathEncode(path string) string {
-	// Todo: ajouter limite de bande passante
-
 	var b strings.Builder
 
 	b.WriteString(pathEncodeRaw(path))
@@ -41,8 +39,6 @@ func PathEncode(path string) string {
 }
 
 func PathEncodeExpirable(path string, duration time.Duration, since time.Time) string {
-	// Todo: ajouter limite de bande passante
-
 	limitTimestamp := since.Add(duration).Unix()
 
 	//fmt.Println("since+duration =", since+duration)

@@ -54,8 +54,10 @@ func main() {
 	}
 
 	env := serve.Env{
-		Vfs:                vfs.New("/vmshare_hub/ISOs/"),
-		Transfers:          map[string]*transfer.Transfer{},
+		Vfs:       vfs.New("/vmshare_hub/ISOs/"),
+		Transfers: map[string]*transfer.Transfer{},
+
+		// Todo: aller chercher ça dans des variables d'environnement
 		AuthBlobRegular:    authBlobRegular,
 		AuthBlobAdmin:      authBlobAdmin,
 		NonAdminSpeedLimit: 524136,

@@ -123,17 +123,19 @@ func (env *Env) routeLs(c *gin.Context, basePath string, path string, key string
 			var encodedPath string
 			if key != "" {
 				encodedPath = crypt.HexEncode(crypt.PathEncode(vfsPath), key)
-			} else {
-				encodedPath = crypt.PathEncodeExpirable(vfsPath, 1*time.Minute, time.Now())
+			} else if env.DefaultTimeLimit > 0 {
+				encodedPath = crypt.PathEncodeExpirable(vfsPath, time.Second*time.Duration(env.DefaultTimeLimit), time.Now())
+			}
+
+			if env.DefaultSpeedLimit > 0 {
+				encodedPath = crypt.AddBandwidthLimit(encodedPath, env.DefaultSpeedLimit)
 			}
 
 			output.Files = append(output.Files, jsonFile{
 				Name:    rawFile,
-				VfsPath: encodedPath, // Todo : temps par défaut configurable
+				VfsPath: encodedPath,
 				Size:    info.Size(),
 			})
-
-			// Todo: ajouter limite de débit par défaut
 		}
 	}
 

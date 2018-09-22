@@ -5,8 +5,10 @@ import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/contrib/jwt"
 	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/json"
 	"math/rand"
 	"net/http"
+	"nfe_3.0_go/in_memory_content_serving"
 	"nfe_3.0_go/nfe/crypt"
 	"nfe_3.0_go/nfe/serve"
 	"nfe_3.0_go/nfe/transfer"
@@ -121,6 +123,28 @@ func main() {
 
 		routerApiPrivate.POST("/gen/", env.RouteAuthRegenLink)
 	}
+
+	err = in_memory_content_serving.PopulateRouter(routerApi, "web", 15*60)
+	if err != nil {
+		fmt.Println("Error when populating routerApi with in-memory-content-serving website data")
+		panic(err)
+	}
+
+	routerApi.GET("/static/config.js", func(c *gin.Context) {
+		var config struct {
+			UrlApi  string `json:"urlApi"`
+			UrlDown string `json:"urlDown"`
+		}
+
+		config.UrlApi = os.Getenv("URL_LIST")
+		config.UrlDown = os.Getenv("URL_DOWN")
+
+		data, err := json.Marshal(&config)
+		if err != nil {
+			panic(err)
+		}
+		fmt.Fprint(c.Writer, "window.appConfig=", string(data), ";")
+	})
 
 	routerDownload.GET("/:path", env.RouteDownload)
 	routerDownload.GET("/:path/:osef", env.RouteDownload)

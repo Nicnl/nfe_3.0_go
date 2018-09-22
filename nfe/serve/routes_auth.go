@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
 	"net/http"
+	"os"
 	"time"
 )
 
@@ -41,6 +42,16 @@ func (env *Env) CheckAuthConfigured(c *gin.Context) {
 
 	if len(env.GlobUrlDown) == 0 {
 		response.Message = append(response.Message, "La variable d'environnement GLOB_SALT_DOWN est vide : doit contenir une secret pour l'encryption. (remplir au pif)")
+		response.IsConfigured = false
+	}
+
+	if len(os.Getenv("URL_LIST")) == 0 {
+		response.Message = append(response.Message, "La variable d'environnement URL_LIST est vide : doit contenir l'URL publique qui contiendra l'interface web de listing")
+		response.IsConfigured = false
+	}
+
+	if len(os.Getenv("URL_DOWN")) == 0 {
+		response.Message = append(response.Message, "La variable d'environnement URL_DOWN est vide : doit contenir l'URL publique qui contiendra le système de téléchargement")
 		response.IsConfigured = false
 	}
 

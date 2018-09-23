@@ -109,7 +109,6 @@ func (env *Env) RouteAuth(c *gin.Context) {
 	userAdmin := true
 	var maxBandwidth int64 = 0
 	var maxDuration int64 = 0
-	fmt.Println("BLOB IS:", req.User+" / "+string(env.PasswordHashSalt)+" / "+req.Pass)
 	err = bcrypt.CompareHashAndPassword(env.AuthBlobAdmin, []byte(req.User+req.Pass+" / "+string(env.PasswordHashSalt)))
 	if err != nil {
 		userAdmin = false

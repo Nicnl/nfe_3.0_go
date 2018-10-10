@@ -5,14 +5,24 @@ import (
 	"time"
 )
 
-type JsonTime time.Time
-
+// Struct vers bytes
 func (t JsonTime) MarshalJSON() ([]byte, error) {
 	if time.Time(t).Unix() == 0 {
 		return []byte("0"), nil
 	}
 
 	return []byte(fmt.Sprintf("%d", time.Time(t).Unix())), nil
+}
+
+// Bytes vers struct
+func (t *JsonTime) UnmarshalJSON(data []byte) error {
+	timestamp, err := strconv.ParseInt(string(data), 10, 64)
+	if err != nil {
+		return fmt.Errorf("[5a4bae7b] %s", err)
+	}
+
+	*t = JsonTime(time.Unix(timestamp, 0))
+	return nil
 }
 
 type JsonCurrentUnixTime time.Time

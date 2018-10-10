@@ -11,7 +11,7 @@ func (t JsonTime) MarshalJSON() ([]byte, error) {
 		return []byte("0"), nil
 	}
 
-	return []byte(fmt.Sprintf("%d", time.Time(t).Unix())), nil
+	return []byte(fmt.Sprintf("%d", time.Time(t).UTC().Unix())), nil
 }
 
 // Bytes vers struct
@@ -21,7 +21,7 @@ func (t *JsonTime) UnmarshalJSON(data []byte) error {
 		return fmt.Errorf("[5a4bae7b] %s", err)
 	}
 
-	*t = JsonTime(time.Unix(timestamp, 0))
+	*t = JsonTime(time.Unix(timestamp, 0).UTC())
 	return nil
 }
 

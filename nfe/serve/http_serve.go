@@ -86,6 +86,7 @@ func (e *Env) TransfersDelete(check func(key string, val *transfer.Transfer) boo
 }
 
 func (env *Env) routineReadDisk(readerChannel chan []byte, f io.Reader, t *transfer.Transfer, until int64) {
+	defer func() { readerChannel = nil }()
 	//fmt.Println("Start disk gouroutine with until =", until)
 	defer func() {
 		if err := recover(); err != nil {
@@ -117,7 +118,11 @@ func (env *Env) routineReadDisk(readerChannel chan []byte, f io.Reader, t *trans
 		until -= int64(readBytes)
 		//fmt.Println("Disk reader goroutine has read", readBytes, "bytes, until is now", until)
 
-		readerChannel <- b[:readBytes]
+		if buffSize > int64(readBytes) {
+			readerChannel <- b[:readBytes]
+		} else {
+			readerChannel <- b
+		}
 	}
 }
 
@@ -336,6 +341,7 @@ func (env *Env) ServeFile(c *gin.Context, t *transfer.Transfer, subVfs vfs.Vfs) 
 	defer func() {
 		defer func() { recover() }()
 		close(readerChannel)
+		readerChannel = nil
 	}()
 	go env.routineReadDisk(readerChannel, f, t, streamLength)
 
@@ -359,6 +365,7 @@ func (env *Env) ServeFile(c *gin.Context, t *transfer.Transfer, subVfs vfs.Vfs) 
 		/*wroteBytes*/ _, err := c.Writer.Write(data)
 		diff := time.Since(start)
 		t.Downloaded += int64(len(data))
+		data = nil
 		//fmt.Println("Have wrote to client:", len(data), "aka", wroteBytes)
 
 		if err != nil {

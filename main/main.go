@@ -6,7 +6,6 @@ import (
 	"github.com/gin-gonic/contrib/jwt"
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/json"
-	"math/rand"
 	"net/http"
 	"nfe_3.0_go/in_memory_content_serving"
 	"nfe_3.0_go/nfe/crypt"
@@ -22,8 +21,6 @@ func startRouter(channel chan error, addr string, handler http.Handler) {
 }
 
 func main() {
-	rand.Seed(time.Now().UnixNano())
-
 	//path := "/vmshare_hub/ISOs/Windows/Windows 10 - 1703/Win10_1703_French_x64.iso"
 
 	routerDownload := gin.Default()

@@ -2,8 +2,11 @@ package json_time
 
 import (
 	"fmt"
+	"strconv"
 	"time"
 )
+
+type JsonTime time.Time
 
 // Struct vers bytes
 func (t JsonTime) MarshalJSON() ([]byte, error) {

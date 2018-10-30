@@ -14,6 +14,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -26,7 +27,6 @@ type Env struct {
 	Vfs                vfs.Vfs
 	BasePath           string
 	PasswordHashSalt   []byte
-	Transfers          map[string]*transfer.Transfer
 	NonAdminTimeLimit  int64
 	NonAdminSpeedLimit int64
 	DefaultSpeedLimit  int64
@@ -34,6 +34,55 @@ type Env struct {
 	GlobSalt           []byte
 	GlobUrlList        []byte
 	GlobUrlDown        []byte
+
+	transfersMux sync.Mutex
+	transfers    map[string]*transfer.Transfer
+}
+
+func (e *Env) TransfersInit() {
+	e.transfersMux.Lock()
+	defer e.transfersMux.Unlock()
+
+	e.transfers = map[string]*transfer.Transfer{}
+}
+
+func (e *Env) TransfersGet(key string) (*transfer.Transfer, bool) {
+	e.transfersMux.Lock()
+	defer e.transfersMux.Unlock()
+
+	output, ok := e.transfers[key]
+
+	return output, ok
+}
+
+func (e *Env) TransfersSet(key string, val *transfer.Transfer) {
+	e.transfersMux.Lock()
+	defer e.transfersMux.Unlock()
+
+	e.transfers[key] = val
+}
+
+func (e *Env) TransfersCopy() map[string]*transfer.Transfer {
+	e.transfersMux.Lock()
+	defer e.transfersMux.Unlock()
+
+	output := make(map[string]*transfer.Transfer, len(e.transfers))
+	for k, v := range e.transfers {
+		output[k] = v
+	}
+
+	return output
+}
+
+func (e *Env) TransfersDelete(check func(key string, val *transfer.Transfer) bool) {
+	e.transfersMux.Lock()
+	defer e.transfersMux.Unlock()
+
+	for k, v := range e.transfers {
+		if check == nil || check(k, v) {
+			delete(e.transfers, k)
+		}
+	}
 }
 
 func (env *Env) routineReadDisk(readerChannel chan []byte, f io.Reader, t *transfer.Transfer, until int64) {

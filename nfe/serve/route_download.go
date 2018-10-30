@@ -43,7 +43,7 @@ func (env *Env) RouteDownloadGuest(c *gin.Context) {
 	}
 
 	// Enregistrement du transfert dans la liste globale
-	env.Transfers[t.Guid.String()] = t
+	env.TransfersSet(t.Guid.String(), t)
 	//defer delete(transfers, t.Guid.String())
 
 	// Envoi du fichier
@@ -74,7 +74,7 @@ func (env *Env) RouteDownload(c *gin.Context) {
 	}
 
 	// Enregistrement du transfert dans la liste globale
-	env.Transfers[t.Guid.String()] = t
+	env.TransfersSet(t.Guid.String(), t)
 	//defer delete(transfers, t.Guid.String())
 
 	// Envoi du fichier

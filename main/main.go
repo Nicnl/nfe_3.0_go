@@ -11,7 +11,6 @@ import (
 	"nfe_3.0_go/in_memory_content_serving"
 	"nfe_3.0_go/nfe/crypt"
 	"nfe_3.0_go/nfe/serve"
-	"nfe_3.0_go/nfe/transfer"
 	"nfe_3.0_go/nfe/vfs"
 	"os"
 	"strconv"
@@ -81,8 +80,8 @@ func main() {
 	}
 
 	env := serve.Env{
-		Vfs:       vfs.New(os.Getenv("BASE_PATH")),
-		Transfers: map[string]*transfer.Transfer{},
+		Vfs: vfs.New(os.Getenv("BASE_PATH")),
+		//Transfers: map[string]*transfer.Transfer{},
 
 		BasePath:           os.Getenv("BASE_PATH"),
 		PasswordHashSalt:   []byte("YOLO MDR PATATOTOOTOOOOOO :DDQSDPOIQSDOIUQS NFE NFE NFE NFE 3.0 YOUPI LOL HEHE YOY MDR YOOOY DOIUQSD #{#[[|\\`^`|[{#|`\\=))à)à`" + os.Getenv("JWT_SECRET")),
@@ -97,6 +96,8 @@ func main() {
 		GlobUrlList:        []byte(os.Getenv("GLOB_SALT_LIST")),
 		GlobUrlDown:        []byte(os.Getenv("GLOB_SALT_DOWN")),
 	}
+
+	env.TransfersInit()
 
 	crypt.GlobSalt = env.GlobSalt
 	crypt.GlobUrlList = env.GlobUrlList

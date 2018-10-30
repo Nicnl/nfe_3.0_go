@@ -17,7 +17,7 @@ func (env *Env) RouteTransfersList(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, env.Transfers)
+	c.JSON(http.StatusOK, env.TransfersCopy())
 }
 
 func (env *Env) RouteTransfersClear(c *gin.Context) {
@@ -31,11 +31,9 @@ func (env *Env) RouteTransfersClear(c *gin.Context) {
 		return
 	}
 
-	for k, v := range env.Transfers {
-		if v.CurrentState != transfer.StateTransferring {
-			delete(env.Transfers, k)
-		}
-	}
+	env.TransfersDelete(func(key string, val *transfer.Transfer) bool {
+		return val.CurrentState != transfer.StateTransferring
+	})
 
 	c.Status(http.StatusNoContent)
 }
@@ -53,7 +51,7 @@ func (env *Env) RouteTransferInterrupt(c *gin.Context) {
 
 	guid := c.Param("guid")
 
-	t, ok := env.Transfers[guid]
+	t, ok := env.TransfersGet(guid)
 	if !ok {
 		c.String(http.StatusNotFound, "unknown transfer guid")
 		return
@@ -86,7 +84,7 @@ func (env *Env) RouteTransferChangeSpeed(c *gin.Context) {
 		return
 	}
 
-	t, ok := env.Transfers[guid]
+	t, ok := env.TransfersGet(guid)
 	if !ok {
 		c.String(http.StatusNotFound, "unknown transfer guid")
 		return

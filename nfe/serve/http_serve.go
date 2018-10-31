@@ -85,8 +85,9 @@ func (e *Env) TransfersDelete(check func(key string, val *transfer.Transfer) boo
 	}
 }
 
-func (env *Env) routineReadDisk(readerChannel chan []byte, f io.Reader, t *transfer.Transfer, until int64) {
+func (env *Env) routineReadDisk(buffers [chanBufferSize][MaxBufferSize]byte, readerChannel chan buffIdentifier, readReturnChannel chan buffIdentifier, f io.Reader, t *transfer.Transfer, until int64) {
 	defer func() { readerChannel = nil }()
+	defer func() { readReturnChannel = nil }()
 	//fmt.Println("Start disk gouroutine with until =", until)
 	defer func() {
 		if err := recover(); err != nil {
@@ -96,33 +97,51 @@ func (env *Env) routineReadDisk(readerChannel chan []byte, f io.Reader, t *trans
 		}
 	}()
 
+	var identifier buffIdentifier
 	for {
 		if until <= 0 {
 			close(readerChannel)
+			close(readReturnChannel)
 			return
 		}
 
+		// Obtention de la prochaine zone mémoire libre utilisable
+		identifier = <-readReturnChannel
+		var b []byte
+
+		// Calcul de la taille de buffers
 		buffSize := t.BufferSize
+		// Todo: voir si il faut pas remettre cette comparaison optionnelle
+		//if buffSize > MaxBufferSize {
+		//	buffSize = MaxBufferSize
+		//}
+
 		if buffSize > until {
 			buffSize = until
+			b = buffers[identifier.Index][:buffSize]
+		} else {
+			// Todo: checker si c'est mauvais pour les perfs de reslicer à la volée
+			b = buffers[identifier.Index][:]
 		}
 
-		b := make([]byte, buffSize)
-
+		// Lecture des données depuis le disque
 		readBytes, err := f.Read(b)
 		if err != nil {
 			t.CurrentState = transfer.StateInterruptedServer
 			close(readerChannel)
+			close(readReturnChannel)
 			return
 		}
 		until -= int64(readBytes)
 		//fmt.Println("Disk reader goroutine has read", readBytes, "bytes, until is now", until)
 
 		if buffSize > int64(readBytes) {
-			readerChannel <- b[:readBytes]
+			identifier.Size = readBytes
 		} else {
-			readerChannel <- b
+			identifier.Size = MaxBufferSize
 		}
+
+		readerChannel <- identifier
 	}
 }
 
@@ -279,6 +298,14 @@ func detectRanges(c *gin.Context, t *transfer.Transfer, info os.FileInfo) (int64
 	return rangeStart, t.SectionLength, true
 }
 
+const MaxBufferSize = 50 * 1024
+const chanBufferSize = 100
+
+type buffIdentifier struct {
+	Index int
+	Size  int
+}
+
 func (env *Env) ServeFile(c *gin.Context, t *transfer.Transfer, subVfs vfs.Vfs) {
 	// 1] Defer pour tout bien fermer proprement
 	defer func() {
@@ -336,14 +363,29 @@ func (env *Env) ServeFile(c *gin.Context, t *transfer.Transfer, subVfs vfs.Vfs) 
 	}
 	defer f.Close()
 
+	// Préparation de l'espace mémoire
+	readerChannel := make(chan buffIdentifier, chanBufferSize)
+	readReturnChannel := make(chan buffIdentifier, chanBufferSize+1)
+	buffers := [chanBufferSize][MaxBufferSize]byte{}
+	for i := 0; i < chanBufferSize; i++ {
+		readReturnChannel <- buffIdentifier{
+			Index: i,
+			Size:  MaxBufferSize,
+		}
+	}
+
 	// Lancement de la routine de lecture du disque
-	readerChannel := make(chan []byte, 100)
 	defer func() {
 		defer func() { recover() }()
 		close(readerChannel)
 		readerChannel = nil
 	}()
-	go env.routineReadDisk(readerChannel, f, t, streamLength)
+	defer func() {
+		defer func() { recover() }()
+		close(readReturnChannel)
+		readReturnChannel = nil
+	}()
+	go env.routineReadDisk(buffers, readerChannel, readReturnChannel, f, t, streamLength)
 
 	// Lancement de la routine de mesure de vitesse
 	speedChannel := make(chan time.Duration)
@@ -355,17 +397,24 @@ func (env *Env) ServeFile(c *gin.Context, t *transfer.Transfer, subVfs vfs.Vfs) 
 
 	// Stream des données
 	for {
-		data, ok := <-readerChannel
+		identifier, ok := <-readerChannel
 
 		if !ok {
 			break
 		}
 
 		start := time.Now()
-		/*wroteBytes*/ _, err := c.Writer.Write(data)
+
+		var err error
+		// Todo: voir si c'est pas mauvais pour les perfs de reslicer à la volée
+		if MaxBufferSize == identifier.Size {
+			/*wroteBytes*/ _, err = c.Writer.Write(buffers[identifier.Index][:])
+		} else {
+			/*wroteBytes*/ _, err = c.Writer.Write(buffers[identifier.Index][:identifier.Size])
+		}
+		t.Downloaded += int64(identifier.Size)
+		readReturnChannel <- identifier // On renvoie l'identifier afin que la zone mémoire puisse être réutilisée
 		diff := time.Since(start)
-		t.Downloaded += int64(len(data))
-		data = nil
 		//fmt.Println("Have wrote to client:", len(data), "aka", wroteBytes)
 
 		if err != nil {

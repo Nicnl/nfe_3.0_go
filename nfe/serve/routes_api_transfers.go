@@ -90,7 +90,7 @@ func (env *Env) RouteTransferChangeSpeed(c *gin.Context) {
 		return
 	}
 
-	var bufferSize int64 = 50 * 1024
+	var bufferSize int64 = MaxBufferSize
 
 	if request.SpeedLimit > 0 && bufferSize*4 > request.SpeedLimit {
 		if request.SpeedLimit >= 4 {

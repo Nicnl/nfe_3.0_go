@@ -26,7 +26,7 @@ func (env *Env) RouteDownloadGuest(c *gin.Context) {
 		return
 	}
 
-	var bufferSize int64 = 50 * 1024
+	var bufferSize int64 = MaxBufferSize
 
 	if speedLimit > 0 && bufferSize*4 > speedLimit {
 		if speedLimit >= 4 {
@@ -57,7 +57,7 @@ func (env *Env) RouteDownload(c *gin.Context) {
 		return
 	}
 
-	var bufferSize int64 = 50 * 1024
+	var bufferSize int64 = MaxBufferSize
 
 	if speedLimit > 0 && bufferSize*4 > speedLimit {
 		if speedLimit >= 4 {

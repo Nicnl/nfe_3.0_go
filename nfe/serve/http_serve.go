@@ -85,7 +85,7 @@ func (e *Env) TransfersDelete(check func(key string, val *transfer.Transfer) boo
 	}
 }
 
-func (env *Env) routineReadDisk(buffers [chanBufferSize][MaxBufferSize]byte, readerChannel chan buffIdentifier, readReturnChannel chan buffIdentifier, f io.Reader, t *transfer.Transfer, until int64) {
+func (env *Env) routineReadDisk(buffers *[chanBufferSize][MaxBufferSize]byte, readerChannel chan buffIdentifier, readReturnChannel chan buffIdentifier, f io.Reader, t *transfer.Transfer, until int64) {
 	defer func() { readerChannel = nil }()
 	defer func() { readReturnChannel = nil }()
 	//fmt.Println("Start disk gouroutine with until =", until)
@@ -366,7 +366,7 @@ func (env *Env) ServeFile(c *gin.Context, t *transfer.Transfer, subVfs vfs.Vfs) 
 	// Préparation de l'espace mémoire
 	readerChannel := make(chan buffIdentifier, chanBufferSize)
 	readReturnChannel := make(chan buffIdentifier, chanBufferSize+1)
-	buffers := [chanBufferSize][MaxBufferSize]byte{}
+	buffers := &[chanBufferSize][MaxBufferSize]byte{}
 	for i := 0; i < chanBufferSize; i++ {
 		readReturnChannel <- buffIdentifier{
 			Index: i,

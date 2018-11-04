@@ -366,7 +366,7 @@ func (env *Env) ServeFile(c *gin.Context, t *transfer.Transfer, subVfs vfs.Vfs) 
 	// Préparation de l'espace mémoire
 	readerChannel := make(chan buffIdentifier, chanBufferSize)
 	readReturnChannel := make(chan buffIdentifier, chanBufferSize+1)
-	buffers := &[chanBufferSize][MaxBufferSize]byte{}
+	buffers := [chanBufferSize][MaxBufferSize]byte{}
 	for i := 0; i < chanBufferSize; i++ {
 		readReturnChannel <- buffIdentifier{
 			Index: i,
@@ -385,7 +385,7 @@ func (env *Env) ServeFile(c *gin.Context, t *transfer.Transfer, subVfs vfs.Vfs) 
 		close(readReturnChannel)
 		readReturnChannel = nil
 	}()
-	go env.routineReadDisk(buffers, readerChannel, readReturnChannel, f, t, streamLength)
+	go env.routineReadDisk(&buffers, readerChannel, readReturnChannel, f, t, streamLength)
 
 	// Lancement de la routine de mesure de vitesse
 	speedChannel := make(chan time.Duration)

@@ -125,20 +125,16 @@ func (env *Env) routineReadDisk(buffers *[chanBufferSize][MaxBufferSize]byte, re
 
 		// Lecture des données depuis le disque
 		readBytes, err := f.Read(b)
+		//fmt.Println("Disk reader goroutine has read", readBytes, "bytes, until is now", until)
+
 		if err != nil {
 			t.CurrentState = transfer.StateInterruptedServer
 			close(readerChannel)
 			return
 		}
+
 		until -= int64(readBytes)
-		//fmt.Println("Disk reader goroutine has read", readBytes, "bytes, until is now", until)
-
-		if buffSize > int64(readBytes) {
-			identifier.Size = readBytes
-		} else {
-			identifier.Size = MaxBufferSize
-		}
-
+		identifier.Size = readBytes
 		readerChannel <- identifier
 	}
 }
@@ -403,11 +399,8 @@ func (env *Env) ServeFile(c *gin.Context, t *transfer.Transfer, subVfs vfs.Vfs) 
 
 		var err error
 		// Todo: voir si c'est pas mauvais pour les perfs de reslicer à la volée
-		if MaxBufferSize == identifier.Size {
-			/*wroteBytes*/ _, err = c.Writer.Write(buffers[identifier.Index][:])
-		} else {
-			/*wroteBytes*/ _, err = c.Writer.Write(buffers[identifier.Index][:identifier.Size])
-		}
+		/*wroteBytes*/
+		_, err = c.Writer.Write(buffers[identifier.Index][:identifier.Size])
 		t.Downloaded += int64(identifier.Size)
 		readReturnChannel <- identifier // On renvoie l'identifier afin que la zone mémoire puisse être réutilisée
 		diff := time.Since(start)

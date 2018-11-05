@@ -106,7 +106,6 @@ func (env *Env) routineReadDisk(buffers *[chanBufferSize][MaxBufferSize]byte, re
 
 		// Obtention de la prochaine zone mémoire libre utilisable
 		identifier = <-readReturnChannel
-		var b []byte
 
 		// Calcul de la taille de buffers
 		buffSize := t.BufferSize

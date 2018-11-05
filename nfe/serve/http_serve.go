@@ -115,13 +115,7 @@ func (env *Env) routineReadDisk(buffers *[chanBufferSize][MaxBufferSize]byte, re
 		//	buffSize = MaxBufferSize
 		//}
 
-		if buffSize > until {
-			buffSize = until
-			b = buffers[identifier.Index][:buffSize]
-		} else {
-			// Todo: checker si c'est mauvais pour les perfs de reslicer à la volée
-			b = buffers[identifier.Index][:]
-		}
+		b = buffers[identifier.Index][:buffSize]
 
 		// Lecture des données depuis le disque
 		readBytes, err := f.Read(b)

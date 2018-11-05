@@ -101,7 +101,6 @@ func (env *Env) routineReadDisk(buffers *[chanBufferSize][MaxBufferSize]byte, re
 	for {
 		if until <= 0 {
 			close(readerChannel)
-			close(readReturnChannel)
 			return
 		}
 
@@ -129,7 +128,6 @@ func (env *Env) routineReadDisk(buffers *[chanBufferSize][MaxBufferSize]byte, re
 		if err != nil {
 			t.CurrentState = transfer.StateInterruptedServer
 			close(readerChannel)
-			close(readReturnChannel)
 			return
 		}
 		until -= int64(readBytes)
@@ -378,12 +376,10 @@ func (env *Env) ServeFile(c *gin.Context, t *transfer.Transfer, subVfs vfs.Vfs) 
 	defer func() {
 		defer func() { recover() }()
 		close(readerChannel)
-		readerChannel = nil
 	}()
 	defer func() {
 		defer func() { recover() }()
 		close(readReturnChannel)
-		readReturnChannel = nil
 	}()
 	go env.routineReadDisk(&buffers, readerChannel, readReturnChannel, f, t, streamLength)
 

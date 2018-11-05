@@ -139,7 +139,12 @@ func (env *Env) routineReadDisk(buffers *[chanBufferSize][MaxBufferSize]byte, re
 	}
 }
 
-func (env *Env) routineMeasureSpeed(speedChannel chan time.Duration, t *transfer.Transfer, c *gin.Context) {
+type speedMeasure struct {
+	Duration time.Duration
+	Data     int
+}
+
+func (env *Env) routineMeasureSpeed(speedChannel chan speedMeasure, t *transfer.Transfer, c *gin.Context) {
 	defer func() {
 		if err := recover(); err != nil {
 			fmt.Println("Speed calculator goroutine has terminated forcefully:", err)
@@ -149,28 +154,28 @@ func (env *Env) routineMeasureSpeed(speedChannel chan time.Duration, t *transfer
 	}()
 
 	var measureTime time.Duration = 0
-	var sentPackets int64 = 0
+	var sentData int = 0
 
 	for {
 		select {
-		case duration, ok := <-speedChannel:
+		case measure, ok := <-speedChannel:
 			if !ok {
 				return
 			}
-			sentPackets += 1
-			measureTime += duration
+			sentData += measure.Data
+			measureTime += measure.Duration
 		case <-time.After(averageTime):
 			measureTime += averageTime
 		}
 
 		if measureTime > averageTime {
-			t.CurrentSpeed = int64(float64(sentPackets*t.BufferSize) / (float64(measureTime) / float64(time.Second)))
+			t.CurrentSpeed = int64(float64(sentData) / (float64(measureTime) / float64(time.Second)))
 			//fmt.Println("B/s =>", t.CurrentSpeed)
 			//fmt.Println("KB/s =>", t.CurrentSpeed/1000)
 			//fmt.Println("MB/s =>", t.CurrentSpeed/1000/1000)
 
 			measureTime = 0
-			sentPackets = 0
+			sentData = 0
 		}
 
 		if t.ShouldInterrupt {
@@ -380,7 +385,7 @@ func (env *Env) ServeFile(c *gin.Context, t *transfer.Transfer, subVfs vfs.Vfs) 
 	go env.routineReadDisk(&buffers, readerChannel, readReturnChannel, f, t, streamLength)
 
 	// Lancement de la routine de mesure de vitesse
-	speedChannel := make(chan time.Duration)
+	speedChannel := make(chan speedMeasure)
 	defer func() {
 		defer func() { recover() }()
 		close(speedChannel)
@@ -426,9 +431,15 @@ func (env *Env) ServeFile(c *gin.Context, t *transfer.Transfer, subVfs vfs.Vfs) 
 			timeToWait := t.CurrentSpeedLimitDelay - diff
 			//fmt.Println("Client was too fast, waiting for", timeToWait/time.Microsecond, "us")
 			time.Sleep(timeToWait)
-			speedChannel <- diff + timeToWait
+			speedChannel <- speedMeasure{
+				Duration: diff + timeToWait,
+				Data:     identifier.Size,
+			}
 		} else {
-			speedChannel <- diff
+			speedChannel <- speedMeasure{
+				Duration: diff,
+				Data:     identifier.Size,
+			}
 		}
 	}
 

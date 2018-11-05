@@ -389,13 +389,13 @@ func (env *Env) ServeFile(c *gin.Context, t *transfer.Transfer, subVfs vfs.Vfs) 
 
 	// Stream des données
 	for {
+		start := time.Now()
+
 		identifier, ok := <-readerChannel
 
 		if !ok {
 			break
 		}
-
-		start := time.Now()
 
 		var err error
 		// Todo: voir si c'est pas mauvais pour les perfs de reslicer à la volée
@@ -403,7 +403,6 @@ func (env *Env) ServeFile(c *gin.Context, t *transfer.Transfer, subVfs vfs.Vfs) 
 		_, err = c.Writer.Write(buffers[identifier.Index][:identifier.Size])
 		t.Downloaded += int64(identifier.Size)
 		readReturnChannel <- identifier // On renvoie l'identifier afin que la zone mémoire puisse être réutilisée
-		diff := time.Since(start)
 		//fmt.Println("Have wrote to client:", len(data), "aka", wroteBytes)
 
 		if err != nil {
@@ -422,6 +421,7 @@ func (env *Env) ServeFile(c *gin.Context, t *transfer.Transfer, subVfs vfs.Vfs) 
 		}
 
 		//fmt.Println("Time:", int64(diff/time.Microsecond), "us")
+		diff := time.Since(start)
 		if t.CurrentSpeedLimitDelay != 0 && t.CurrentSpeedLimitDelay > diff {
 			timeToWait := t.CurrentSpeedLimitDelay - diff
 			//fmt.Println("Client was too fast, waiting for", timeToWait/time.Microsecond, "us")

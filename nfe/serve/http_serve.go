@@ -115,10 +115,8 @@ func (env *Env) routineReadDisk(buffers *[chanBufferSize][MaxBufferSize]byte, re
 		//	buffSize = MaxBufferSize
 		//}
 
-		b = buffers[identifier.Index][:buffSize]
-
 		// Lecture des données depuis le disque
-		readBytes, err := f.Read(b)
+		readBytes, err := f.Read(buffers[identifier.Index][:buffSize])
 		//fmt.Println("Disk reader goroutine has read", readBytes, "bytes, until is now", until)
 
 		if err != nil {

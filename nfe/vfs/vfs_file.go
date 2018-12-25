@@ -40,7 +40,7 @@ func (v *File) Ls(path string) ([]string, error) {
 			keep := true
 			for _, pattern := range patternList {
 				match, err := filepath.Match(pattern, f.Name())
-				if err != nil && match {
+				if err != nil || match {
 					keep = false
 					break
 				}

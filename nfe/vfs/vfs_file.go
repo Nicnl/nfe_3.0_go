@@ -4,6 +4,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -26,8 +27,29 @@ func (v *File) Ls(path string) ([]string, error) {
 	}
 
 	var out []string
-	for _, f := range files {
-		out = append(out, f.Name())
+
+	patternsMatch := os.Getenv("FILTER_OUT")
+	if patternsMatch == "" {
+		for _, f := range files {
+			out = append(out, f.Name())
+		}
+	} else {
+		patternList := strings.Split(patternsMatch, ";")
+
+		for _, f := range files {
+			keep := true
+			for _, pattern := range patternList {
+				match, err := filepath.Match(pattern, f.Name())
+				if err != nil && match {
+					keep = false
+					break
+				}
+			}
+
+			if keep {
+				out = append(out, f.Name())
+			}
+		}
 	}
 
 	return out, nil

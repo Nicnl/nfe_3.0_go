@@ -292,7 +292,7 @@ func detectRanges(c *gin.Context, t *transfer.Transfer, info os.FileInfo) (int64
 }
 
 const MaxBufferSize = 50 * 1024
-const chanBufferSize = 100
+const chanBufferSize = 30
 
 type buffIdentifier struct {
 	Index int

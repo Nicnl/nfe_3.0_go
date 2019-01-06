@@ -113,6 +113,9 @@ func (env *Env) routineReadDisk(buffers *[chanBufferSize][MaxBufferSize]byte, re
 		//if buffSize > MaxBufferSize {
 		//	buffSize = MaxBufferSize
 		//}
+		if buffSize > until {
+			buffSize = until
+		}
 
 		// Lecture des données depuis le disque
 		readBytes, err := f.Read(buffers[identifier.Index][:buffSize])
@@ -198,7 +201,7 @@ func rangeNotSatisfiable(c *gin.Context, t *transfer.Transfer) {
 
 func detectRanges(c *gin.Context, t *transfer.Transfer, info os.FileInfo) (int64, int64, bool) {
 	rangeHeader := c.GetHeader("Range")
-	//fmt.Println("RAW RANGE HEADER :", rangeHeader)
+
 	if rangeHeader == "" {
 		t.SectionLength = t.FileLength
 		t.SectionStart = 0

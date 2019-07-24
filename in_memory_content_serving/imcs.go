@@ -152,7 +152,7 @@ func PopulateRouter(router *gin.Engine, scanPath string, expiration int) error {
 		}
 		path = strings.TrimPrefix(path, "/")
 
-		if path == "static/config.js" {
+		if path == "static/config.js" || path == "/static/config.js" {
 			return nil
 		}
 

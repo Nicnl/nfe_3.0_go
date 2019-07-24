@@ -71,10 +71,10 @@ func main() {
 	}
 
 	var defaultTimeLimit int64 = 15 * 60
-	if v := os.Getenv("DEFAULT_SPEED_LIMIT"); v != "" {
+	if v := os.Getenv("DEFAULT_TIME_LIMIT"); v != "" {
 		defaultTimeLimit, err = strconv.ParseInt(v, 10, 64)
 		if err != nil {
-			fmt.Println("Error while parsing DEFAULT_SPEED_LIMIT as an int64")
+			fmt.Println("Error while parsing DEFAULT_TIME_LIMIT as an int64")
 		}
 	}
 

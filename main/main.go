@@ -78,6 +78,11 @@ func main() {
 		}
 	}
 
+	var vlcHotFix bool = false
+	if v := os.Getenv("VLC_HOTFIX"); v == "1" || v == "true" || v == "TRUE" {
+		vlcHotFix = true
+	}
+
 	env := serve.Env{
 		Vfs: vfs.New(os.Getenv("BASE_PATH")),
 		//Transfers: map[string]*transfer.Transfer{},
@@ -132,12 +137,14 @@ func main() {
 
 	routerApi.GET("/static/config.js", func(c *gin.Context) {
 		var config struct {
-			UrlApi  string `json:"urlApi"`
-			UrlDown string `json:"urlDown"`
+			UrlApi    string `json:"urlApi"`
+			UrlDown   string `json:"urlDown"`
+			VlcHotFix bool   `json:"vlcHotFix"`
 		}
 
 		config.UrlApi = os.Getenv("URL_LIST")
 		config.UrlDown = os.Getenv("URL_DOWN")
+		config.VlcHotFix = vlcHotFix
 
 		data, err := json.Marshal(&config)
 		if err != nil {

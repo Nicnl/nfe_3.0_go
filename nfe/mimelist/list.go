@@ -589,6 +589,7 @@ var mimeList = map[string]string{
 	"potx":  "application/vnd.openxmlformats-officedocument.presentationml.template",
 	"ppsx":  "application/vnd.openxmlformats-officedocument.presentationml.slideshow",
 	"ppam":  "application/vnd.ms-powerpoint.addin.macroEnabled.12",
+	"json": "application/json",
 }
 
 func GetMime(filename string) string {

@@ -8,7 +8,7 @@ import (
 )
 
 func B_tar_stream(w io.Writer, files []File, expectedSize int64) error {
-	copyBuf := make([]byte, 2*1024*1024)
+	copyBuf := make([]byte, 2*1024*1024) // Buffer de 2Mo pour la copie
 	tw := tar.NewWriter(w)
 
 	for _, file := range files {

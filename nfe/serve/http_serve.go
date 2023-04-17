@@ -2,6 +2,8 @@ package serve
 
 import (
 	"fmt"
+	"github.com/djherbis/buffer"
+	"github.com/djherbis/nio/v3"
 	"github.com/gin-gonic/gin"
 	"io"
 	"mime"
@@ -306,7 +308,7 @@ func detectRanges(c *gin.Context, t *transfer.Transfer, info os.FileInfo) (int64
 	return rangeStart, t.SectionLength, true
 }
 
-const MaxBufferSize = 50 * 1024
+const MaxBufferSize = 64 * 1024
 const chanBufferSize = 30
 
 type buffIdentifier struct {
@@ -382,7 +384,8 @@ func (env *Env) ServeFile(c *gin.Context, t *transfer.Transfer, subVfs vfs.Vfs) 
 	var f io.ReadCloser
 	if fileSeek == 0 {
 		if info.IsDir() {
-			pipeReader, pipeWriter := io.Pipe()
+			pipeBuf := buffer.New(2 * 1024 * 1024) // Buffer de 2Mo pour les petits fichiers
+			pipeReader, pipeWriter := nio.Pipe(pipeBuf)
 
 			f = pipeReader
 

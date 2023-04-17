@@ -30,6 +30,8 @@ func _recurseDir(bc *BufferCounter, tw *tar.Writer, path string, subPath string,
 	// Extract files, and directories
 	dirs := make([]os.DirEntry, 0, len(entries))
 
+	dirName := filepath.Base(path)
+
 	// Todo: sort before appending, so that it is deterministic
 	_allFiles := *allFiles
 	for _, entry := range entries {
@@ -42,10 +44,10 @@ func _recurseDir(bc *BufferCounter, tw *tar.Writer, path string, subPath string,
 			}
 
 			var (
-				fileRelativePath = filepath.Join(subPath, entry.Name())
-				fileSize         = fileInfo.Size()
-				fileMode         = fileInfo.Mode()
-				fileTime         = fileInfo.ModTime()
+				archivePath = filepath.Join(dirName, subPath, entry.Name())
+				fileSize    = fileInfo.Size()
+				fileMode    = fileInfo.Mode()
+				fileTime    = fileInfo.ModTime()
 			)
 
 			// Check if filemode is link
@@ -55,8 +57,8 @@ func _recurseDir(bc *BufferCounter, tw *tar.Writer, path string, subPath string,
 
 			// Append file to the list
 			_allFiles = append(_allFiles, File{
-				RelativePath: fileRelativePath,
-				AbsolutePath: filepath.Join(path, fileRelativePath),
+				RelativePath: archivePath,
+				AbsolutePath: filepath.Join(path, subPath, entry.Name()),
 				Size:         fileSize,
 				ModTime:      fileTime,
 				Mode:         int64(fileMode),
@@ -65,7 +67,7 @@ func _recurseDir(bc *BufferCounter, tw *tar.Writer, path string, subPath string,
 			// Write tar header
 			{
 				err = tw.WriteHeader(&tar.Header{
-					Name:    fileRelativePath,
+					Name:    archivePath,
 					Size:    0,
 					Mode:    int64(fileMode),
 					ModTime: fileTime,

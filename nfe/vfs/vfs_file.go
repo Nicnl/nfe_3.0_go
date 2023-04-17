@@ -93,6 +93,10 @@ func (v *File) OpenSeek(path string, atSeek int64) (io.ReadCloser, error) {
 	return f, nil
 }
 
+func (v *File) AbsolutePath(path string) string {
+	return filepath.Join(v.basePath, path)
+}
+
 func (v *File) SubVfs(path string) Vfs {
 	if path == "" {
 		return v

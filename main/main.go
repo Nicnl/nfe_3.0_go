@@ -1,11 +1,11 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/contrib/jwt"
 	"github.com/gin-gonic/gin"
-	"github.com/gin-gonic/gin/json"
 	"math/rand"
 	"net/http"
 	"nfe_3.0_go/in_memory_content_serving"
@@ -129,10 +129,12 @@ func main() {
 		routerApiPrivate.POST("/api/gen/", env.RouteAuthRegenLink)
 	}
 
-	err = in_memory_content_serving.PopulateRouter(routerApi, "web", 15*60)
-	if err != nil {
-		fmt.Println("Error when populating routerApi with in-memory-content-serving website data")
-		panic(err)
+	if os.Getenv("SKIP_VUE") != "1" {
+		err = in_memory_content_serving.PopulateRouter(routerApi, "web", 15*60)
+		if err != nil {
+			fmt.Println("Error when populating routerApi with in-memory-content-serving website data")
+			panic(err)
+		}
 	}
 
 	routerApi.GET("/static/config.js", func(c *gin.Context) {
@@ -160,8 +162,19 @@ func main() {
 	routerDownload.GET("/:path/:osef/guest/:realpath/:osef2", env.RouteDownloadGuest)
 
 	channel := make(chan error)
-	go startRouter(channel, ":9000", routerDownload)
-	go startRouter(channel, ":9001", routerApi)
+
+	portDownload := os.Getenv("PORT_DOWNLOAD")
+	if portDownload == "" {
+		portDownload = "9000"
+	}
+
+	portApi := os.Getenv("PORT_API")
+	if portApi == "" {
+		portApi = "9001"
+	}
+
+	go startRouter(channel, ":"+portDownload, routerDownload)
+	go startRouter(channel, ":"+portApi, routerApi)
 
 	if err := <-channel; err != nil {
 		panic(err)

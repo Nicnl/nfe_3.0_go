@@ -13,4 +13,5 @@ type Vfs interface {
 	Open(path string) (io.ReadCloser, error)
 	OpenSeek(path string, atSeek int64) (io.ReadCloser, error)
 	SubVfs(path string) Vfs
+	AbsolutePath(path string) string
 }

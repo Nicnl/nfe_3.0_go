@@ -62,3 +62,7 @@ func (v *Fake) OpenSeek(path string, atSeek int64) (io.ReadCloser, error) {
 func (v *Fake) SubVfs(path string) Vfs {
 	return v
 }
+
+func (v *Fake) AbsolutePath(path string) string {
+	return path
+}

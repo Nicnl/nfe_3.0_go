@@ -7,6 +7,7 @@ import (
 	"mime"
 	"net"
 	"net/http"
+	"nfe_3.0_go/nfe/deterministic_tar"
 	"nfe_3.0_go/nfe/json_time"
 	"nfe_3.0_go/nfe/mimelist"
 	"nfe_3.0_go/nfe/transfer"
@@ -118,14 +119,28 @@ func (env *Env) routineReadDisk(buffers *[chanBufferSize][MaxBufferSize]byte, re
 		}
 
 		// Lecture des données depuis le disque
-		readBytes, err := f.Read(buffers[identifier.Index][:buffSize])
-		//fmt.Println("Disk reader goroutine has read", readBytes, "bytes, until is now", until)
+		var (
+			readBytes int
+			err       error
+		)
+		for {
+			readBytes, err = f.Read(buffers[identifier.Index][:buffSize])
+			if err != nil {
+				if err != io.EOF {
+					fmt.Println("Error when reading file:", err)
+				}
+				t.CurrentState = transfer.StateInterruptedServer
+				close(readerChannel)
+				return
+			}
 
-		if err != nil {
-			t.CurrentState = transfer.StateInterruptedServer
-			close(readerChannel)
-			return
+			if readBytes > 0 {
+				break
+			}
+			//fmt.Println("Read disk routine has read 0, waiting for a bit...")
+			time.Sleep(1 * time.Millisecond)
 		}
+		//fmt.Println("Disk reader goroutine has read", readBytes, "bytes, until is now", until)
 
 		until -= int64(readBytes)
 		identifier.Size = readBytes
@@ -338,16 +353,65 @@ func (env *Env) ServeFile(c *gin.Context, t *transfer.Transfer, subVfs vfs.Vfs) 
 
 	// Envoi des headers avec taille et nom du fichier
 	//env.sendHeaders(c, t)
+	var (
+		tarExpectedSize int64
+		tarFiles        []deterministic_tar.File
+	)
+	if info.IsDir() {
+		tarExpectedSize, tarFiles, err = deterministic_tar.A_PrecalculateTarSize(subVfs.AbsolutePath(t.FilePath))
+		if err != nil {
+			t.CurrentState = transfer.StateInterruptedServer
+			panic(err)
+		}
+
+		t.FileLength = tarExpectedSize
+		t.FileName = t.FileName + ".tar"
+	}
+
 	fileSeek, streamLength, shouldContinue := detectRanges(c, t, info)
 	if !shouldContinue {
 		t.CurrentState = transfer.StateInterruptedClient
 		return
 	}
 
+	if info.IsDir() {
+		fileSeek = 0
+		streamLength = tarExpectedSize
+	}
+
 	var f io.ReadCloser
 	if fileSeek == 0 {
-		f, err = subVfs.Open(t.FilePath)
+		if info.IsDir() {
+			pipeReader, pipeWriter := io.Pipe()
+
+			f = pipeReader
+
+			go func() {
+				defer func() {
+					if err := recover(); err != nil {
+						fmt.Println("Http tar goroutine has terminated forcefully:", err)
+					} else {
+						fmt.Println("Http tar goroutine has terminated gracefully")
+					}
+				}()
+
+				fmt.Println("DEBUG STREAM DU TAR")
+				err := deterministic_tar.B_tar_stream(pipeWriter, tarFiles, tarExpectedSize)
+				if err != nil {
+					fmt.Println("err =", err)
+					t.CurrentState = transfer.StateInterruptedServer
+					panic(err)
+				}
+			}()
+		} else {
+			f, err = subVfs.Open(t.FilePath)
+		}
 	} else {
+		if info.IsDir() {
+			t.CurrentState = transfer.StateInterruptedServer
+			panic("cannot seek on a directory")
+		}
+
 		f, err = subVfs.OpenSeek(t.FilePath, fileSeek)
 	}
 	if err != nil {

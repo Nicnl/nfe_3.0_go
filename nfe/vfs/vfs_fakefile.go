@@ -2,6 +2,7 @@ package vfs
 
 import (
 	"os"
+	"path/filepath"
 	"time"
 )
 
@@ -34,4 +35,8 @@ func (f *FakeFile) IsDir() bool {
 
 func (f *FakeFile) Sys() interface{} {
 	return nil
+}
+
+func (f *FakeFile) AbsolutePath(path string) string {
+	return filepath.Join(f.name, path)
 }

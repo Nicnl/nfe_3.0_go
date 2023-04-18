@@ -16,7 +16,7 @@ func TestZip(t *testing.T) {
 
 	zipPath := dirPath + ".zip"
 
-	expectedFileSize, files, err := PrepareZip(dirPath)
+	expectedFileSize, files, err := Prepare(dirPath)
 	if err != nil {
 		panic(err)
 	}
@@ -28,7 +28,7 @@ func TestZip(t *testing.T) {
 		panic(err)
 	}
 
-	err = StreamZip(context.Background(), dirPath, f, files)
+	err = Stream(context.Background(), dirPath, f, files)
 	if err != nil {
 		panic(err)
 	}

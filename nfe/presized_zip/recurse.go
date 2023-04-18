@@ -6,8 +6,6 @@ import (
 	"path/filepath"
 )
 
-var writeBuf = make([]byte, 10*1024*1024)
-
 func _recurseDir(path string, subPath string, allFiles *[]*zip.FileHeader) error {
 	entries, err := os.ReadDir(filepath.Join(path, subPath))
 	if err != nil {

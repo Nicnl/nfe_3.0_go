@@ -362,7 +362,7 @@ func (env *Env) ServeFile(c *gin.Context, t *transfer.Transfer, subVfs vfs.Vfs) 
 		archiveFiles        []*zip.FileHeader
 	)
 	if info.IsDir() {
-		archiveExpectedSize, archiveFiles, err = presized_zip.PrepareZip(subVfs.AbsolutePath(t.FilePath))
+		archiveExpectedSize, archiveFiles, err = presized_zip.Prepare(subVfs.AbsolutePath(t.FilePath))
 		if err != nil {
 			t.CurrentState = transfer.StateInterruptedServer
 			panic(err)
@@ -401,7 +401,7 @@ func (env *Env) ServeFile(c *gin.Context, t *transfer.Transfer, subVfs vfs.Vfs) 
 				}()
 
 				fmt.Println("DEBUG STREAM ARCHIVE")
-				err := presized_zip.StreamZip(c, subVfs.AbsolutePath(t.FilePath), pipeWriter, archiveFiles)
+				err := presized_zip.Stream(c, subVfs.AbsolutePath(t.FilePath), pipeWriter, archiveFiles)
 				if err != nil {
 					fmt.Println("err =", err)
 					t.CurrentState = transfer.StateInterruptedServer

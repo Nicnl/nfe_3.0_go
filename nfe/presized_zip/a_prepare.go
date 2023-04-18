@@ -7,7 +7,7 @@ const (
 	uint16max = (1 << 16) - 1
 )
 
-func PrepareZip(basePath string) (uint64, []*zip.FileHeader, error) {
+func Prepare(basePath string) (uint64, []*zip.FileHeader, error) {
 	files := make([]*zip.FileHeader, 0)
 	err := _recurseDir(basePath, "", &files)
 	if err != nil {

@@ -14,7 +14,7 @@ import (
 const concurrentChans = 64
 const smallFileThreshold = 128 * 1024
 
-func StreamZip(ctx context.Context, basePath string, w io.Writer, files []*zip.FileHeader) (outputErr error) {
+func Stream(ctx context.Context, basePath string, w io.Writer, files []*zip.FileHeader) (outputErr error) {
 	if os.Getenv("PRINT_MEM_AFTER_ARCHIVE") == "1" {
 		defer func() {
 			// debug print memory stack heap gc
@@ -23,7 +23,7 @@ func StreamZip(ctx context.Context, basePath string, w io.Writer, files []*zip.F
 				return b / 1024 / 1024
 			}
 
-			fmt.Println("StreamZip: Memory stats:")
+			fmt.Println("Stream: Memory stats:")
 			m := new(runtime.MemStats)
 			runtime.ReadMemStats(m)
 			fmt.Printf("Alloc = %v MiB", bToMb(m.Alloc))
@@ -36,8 +36,8 @@ func StreamZip(ctx context.Context, basePath string, w io.Writer, files []*zip.F
 
 	defer func() {
 		if r := recover(); r != nil {
-			fmt.Fprintln(os.Stderr, "Recovered in StreamZip:", r)
-			outputErr = fmt.Errorf("recovered in StreamZip: %v", r)
+			fmt.Fprintln(os.Stderr, "Recovered in Stream:", r)
+			outputErr = fmt.Errorf("recovered in Stream: %v", r)
 		}
 	}()
 

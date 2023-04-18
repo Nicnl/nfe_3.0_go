@@ -67,7 +67,8 @@ func PrepareZip(basePath string) (uint64, []*zip.FileHeader, error) {
 			}
 
 			// Extra field record for zip64 files
-			if fh.UncompressedSize64 >= uint32max || offsets[i] >= uint32max {
+			isZip64 := fh.UncompressedSize64 >= uint32max
+			if isZip64 || offsets[i] >= uint32max {
 				centralRecordSize += 28
 			}
 		}

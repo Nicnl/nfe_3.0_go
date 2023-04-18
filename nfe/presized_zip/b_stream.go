@@ -5,14 +5,35 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"nfe_3.0_go/helpers"
 	"os"
 	"path/filepath"
+	"runtime"
 )
 
 const concurrentChans = 64
 const smallFileThreshold = 128 * 1024
 
 func StreamZip(ctx context.Context, basePath string, w io.Writer, files []*zip.FileHeader) (outputErr error) {
+	if os.Getenv("PRINT_MEM_AFTER_ARCHIVE") == "1" {
+		defer func() {
+			// debug print memory stack heap gc
+
+			bToMb := func(b uint64) uint64 {
+				return b / 1024 / 1024
+			}
+
+			fmt.Println("StreamZip: Memory stats:")
+			m := new(runtime.MemStats)
+			runtime.ReadMemStats(m)
+			fmt.Printf("Alloc = %v MiB", bToMb(m.Alloc))
+			fmt.Printf("\tTotalAlloc = %v MiB", bToMb(m.TotalAlloc))
+			fmt.Printf("\tSys = %v MiB", bToMb(m.Sys))
+			fmt.Printf("\tNumGC = %v", m.NumGC)
+			fmt.Println()
+		}()
+	}
+
 	defer func() {
 		if r := recover(); r != nil {
 			fmt.Fprintln(os.Stderr, "Recovered in StreamZip:", r)
@@ -22,6 +43,10 @@ func StreamZip(ctx context.Context, basePath string, w io.Writer, files []*zip.F
 
 	// Big buffer for fat file copy
 	copyBuf := make([]byte, 8*1024*1024) // Buffer de 8Mo pour la copie
+	defer func() {
+		defer helpers.RecoverStderr()
+		copyBuf = nil
+	}()
 
 	// Async chan, reading small files in advance
 	var (
@@ -29,18 +54,29 @@ func StreamZip(ctx context.Context, basePath string, w io.Writer, files []*zip.F
 		freeChans = make(chan chan []byte, concurrentChans)
 	)
 
+	defer func() {
+		defer helpers.RecoverStderr()
+		close(freeChans)
+	}()
+
+	defer func() {
+		defer helpers.RecoverStderr()
+		close(fullChans)
+	}()
+
 	for i := 0; i < concurrentChans; i++ {
 		//fmt.Println("Creating chan", i)
-		freeChans <- make(chan []byte)
+		c := make(chan []byte, 1)
+		defer func(chanToClose chan []byte) {
+			defer helpers.RecoverStderr()
+			close(chanToClose)
+		}(c)
+		freeChans <- c
 	}
 	//fmt.Println("Chans created")
 
 	go func() {
-		defer func() {
-			if r := recover(); r != nil {
-				fmt.Fprintln(os.Stderr, "Recovered in StreamZip:", r)
-			}
-		}()
+		defer helpers.RecoverStderr()
 
 		for _, fh := range files {
 			select {
@@ -61,22 +97,16 @@ func StreamZip(ctx context.Context, basePath string, w io.Writer, files []*zip.F
 							panic(err)
 						}
 
-						c <- rawData
+						select {
+						case c <- rawData:
+							// Write to channel successfully
+						default:
+							// Channel is closed, do nothing
+						}
 					}(selectedChan, filepath.Join(basePath, fh.Name))
 				}
 			}
 		}
-		close(fullChans)
-	}()
-
-	// Just in case
-	defer func() {
-		defer func() { recover() }()
-		close(freeChans)
-	}()
-
-	defer func() {
-		defer func() { recover() }()
 		close(fullChans)
 	}()
 
@@ -104,15 +134,23 @@ func StreamZip(ctx context.Context, basePath string, w io.Writer, files []*zip.F
 			}
 			freeChans <- readChan
 		} else {
-			// Read big file from disk
-			f, err := os.Open(filepath.Join(basePath, fh.Name))
+			err = func() error {
+				// Read big file from disk
+				f, err := os.Open(filepath.Join(basePath, fh.Name))
+				if err != nil {
+					return fmt.Errorf("%s: %s", fh.Name, err.Error())
+				}
+				defer f.Close()
+
+				_, err = io.CopyBuffer(fw, f, copyBuf)
+				if err != nil {
+					return fmt.Errorf("%s: %s / exp size: %d", fh.Name, err.Error(), fh.UncompressedSize64)
+				}
+
+				return nil
+			}()
 			if err != nil {
 				return fmt.Errorf("%s: %s", fh.Name, err.Error())
-			}
-
-			_, err = io.CopyBuffer(fw, f, copyBuf)
-			if err != nil {
-				return fmt.Errorf("%s: %s / exp size: %d", fh.Name, err.Error(), fh.UncompressedSize64)
 			}
 		}
 	}

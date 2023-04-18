@@ -10,6 +10,7 @@ import (
 	"mime"
 	"net"
 	"net/http"
+	"nfe_3.0_go/helpers"
 	"nfe_3.0_go/nfe/json_time"
 	"nfe_3.0_go/nfe/mimelist"
 	"nfe_3.0_go/nfe/presized_zip"
@@ -320,7 +321,7 @@ type buffIdentifier struct {
 func (env *Env) ServeFile(c *gin.Context, t *transfer.Transfer, subVfs vfs.Vfs) {
 	// 1] Defer pour tout bien fermer proprement
 	defer func() {
-		defer func() { recover() }()
+		defer helpers.RecoverStderr()
 		c.Request.Body.Close()
 	}()
 
@@ -437,11 +438,11 @@ func (env *Env) ServeFile(c *gin.Context, t *transfer.Transfer, subVfs vfs.Vfs) 
 
 	// Lancement de la routine de lecture du disque
 	defer func() {
-		defer func() { recover() }()
+		defer helpers.RecoverStderr()
 		close(readerChannel)
 	}()
 	defer func() {
-		defer func() { recover() }()
+		defer helpers.RecoverStderr()
 		close(readReturnChannel)
 	}()
 	go env.routineReadDisk(&buffers, readerChannel, readReturnChannel, f, t, streamLength)
@@ -449,7 +450,7 @@ func (env *Env) ServeFile(c *gin.Context, t *transfer.Transfer, subVfs vfs.Vfs) 
 	// Lancement de la routine de mesure de vitesse
 	speedChannel := make(chan speedMeasure)
 	defer func() {
-		defer func() { recover() }()
+		defer helpers.RecoverStderr()
 		close(speedChannel)
 	}()
 	go env.routineMeasureSpeed(speedChannel, t, c)

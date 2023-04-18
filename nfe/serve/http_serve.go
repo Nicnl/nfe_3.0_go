@@ -375,11 +375,13 @@ func (env *Env) ServeFile(c *gin.Context, t *transfer.Transfer, subVfs vfs.Vfs) 
 		archiveFiles        []*zip.FileHeader
 	)
 	if info.IsDir() {
+		fmt.Println("# Begin preparing archive:", t.FilePath)
 		archiveExpectedSize, archiveFiles, err = presized_zip.Prepare(subVfs.AbsolutePath(t.FilePath))
 		if err != nil {
 			t.CurrentState = transfer.StateInterruptedServer
 			panic(err)
 		}
+		fmt.Println("# Archive prepared:", t.FilePath, "=>", len(archiveFiles), "files", "/", archiveExpectedSize, "bytes", "/", "~=", archiveExpectedSize/1024/1024, "Mo")
 
 		t.FileLength = int64(archiveExpectedSize)
 		t.FileName = t.FileName + ".zip"
@@ -413,12 +415,14 @@ func (env *Env) ServeFile(c *gin.Context, t *transfer.Transfer, subVfs vfs.Vfs) 
 					}
 				}()
 
-				fmt.Println("DEBUG STREAM ARCHIVE")
+				fmt.Println("# Streaming archive: ", t.FilePath)
 				err := presized_zip.Stream(c, subVfs.AbsolutePath(t.FilePath), pipeWriter, archiveFiles)
 				if err != nil {
-					fmt.Println("err =", err)
+					fmt.Println("# Archive has not streamed completely:", t.FilePath, "=>", err)
 					t.CurrentState = transfer.StateInterruptedServer
 					panic(err)
+				} else {
+					fmt.Println("# Archive was streamed successfully:", t.FilePath)
 				}
 			}()
 		} else {

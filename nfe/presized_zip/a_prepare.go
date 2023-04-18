@@ -2,6 +2,11 @@ package presized_zip
 
 import "archive/zip"
 
+const (
+	uint32max = (1 << 32) - 1
+	uint16max = (1 << 16) - 1
+)
+
 func PrepareZip(basePath string) (uint64, []*zip.FileHeader, error) {
 	files := make([]*zip.FileHeader, 0)
 	err := _recurseDir(basePath, "", &files)
@@ -74,7 +79,7 @@ func PrepareZip(basePath string) (uint64, []*zip.FileHeader, error) {
 
 	// Predicate if a zip64 end of central directory record is needed
 	{
-		if len(files) >= uint32max || fileHeaderSize >= uint32max || centralRecordSize >= uint32max {
+		if len(files) >= uint16max || fileHeaderSize >= uint32max || centralRecordSize >= uint32max {
 			centralRecordSize += 56 + 20 // go std: directory64EndLen + directory64LocLen
 		}
 	}

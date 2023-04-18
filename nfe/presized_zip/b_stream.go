@@ -52,25 +52,34 @@ func StreamZip(ctx context.Context, basePath string, w io.Writer, files []*zip.F
 	var (
 		fullChans = make(chan chan []byte, concurrentChans)
 		freeChans = make(chan chan []byte, concurrentChans)
+
+		fullChansNeedsClosing = true
+		freeChansNeedsClosing = true
 	)
 
-	defer func() {
-		defer helpers.RecoverStderr()
-		close(freeChans)
-	}()
+	closeFullChans := func() {
+		if fullChansNeedsClosing {
+			defer helpers.RecoverStderr()
+			close(fullChans)
+			fullChansNeedsClosing = false
+		}
+	}
 
-	defer func() {
-		defer helpers.RecoverStderr()
-		close(fullChans)
-	}()
+	closeFreeChans := func() {
+		if freeChansNeedsClosing {
+			defer helpers.RecoverStderr()
+			close(freeChans)
+			freeChansNeedsClosing = false
+		}
+	}
+
+	defer closeFullChans()
+	defer closeFreeChans()
 
 	for i := 0; i < concurrentChans; i++ {
 		//fmt.Println("Creating chan", i)
 		c := make(chan []byte, 1)
-		defer func(chanToClose chan []byte) {
-			defer helpers.RecoverStderr()
-			close(chanToClose)
-		}(c)
+		defer func() { close(c) }()
 		freeChans <- c
 	}
 	//fmt.Println("Chans created")
@@ -82,8 +91,8 @@ func StreamZip(ctx context.Context, basePath string, w io.Writer, files []*zip.F
 			select {
 			case <-ctx.Done():
 				// Context was cancelled, close channels and return
-				close(fullChans)
-				close(freeChans)
+				closeFullChans()
+				closeFreeChans()
 				return
 			default:
 				if fh.UncompressedSize64 < smallFileThreshold {
@@ -107,7 +116,7 @@ func StreamZip(ctx context.Context, basePath string, w io.Writer, files []*zip.F
 				}
 			}
 		}
-		close(fullChans)
+		closeFullChans()
 	}()
 
 	// Actual zip writing

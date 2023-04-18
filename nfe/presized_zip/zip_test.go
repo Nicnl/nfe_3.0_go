@@ -11,7 +11,7 @@ import (
 func TestZip(t *testing.T) {
 	dirPath := strings.TrimSpace(os.Getenv("TEST_ZIP_COMPRESS_DIR_PATH"))
 	if dirPath == "" {
-		return
+		dirPath = `C:\Users\Nicnl\Desktop\stable-diffusion-webui`
 	}
 
 	zipPath := dirPath + ".zip"

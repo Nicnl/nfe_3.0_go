@@ -1,10 +1,10 @@
-package deterministic_tar
+package presized_zip
 
 type BufferCounter struct {
-	Size int64
+	Size uint64
 }
 
 func (bc *BufferCounter) Write(p []byte) (n int, err error) {
-	bc.Size += int64(len(p))
+	bc.Size += uint64(len(p))
 	return len(p), nil
 }

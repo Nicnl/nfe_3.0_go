@@ -1,6 +1,7 @@
 package serve
 
 import (
+	"archive/zip"
 	"fmt"
 	"github.com/djherbis/buffer"
 	"github.com/djherbis/nio/v3"
@@ -9,9 +10,9 @@ import (
 	"mime"
 	"net"
 	"net/http"
-	"nfe_3.0_go/nfe/deterministic_tar"
 	"nfe_3.0_go/nfe/json_time"
 	"nfe_3.0_go/nfe/mimelist"
+	"nfe_3.0_go/nfe/presized_zip"
 	"nfe_3.0_go/nfe/transfer"
 	"nfe_3.0_go/nfe/vfs"
 	"os"
@@ -356,18 +357,18 @@ func (env *Env) ServeFile(c *gin.Context, t *transfer.Transfer, subVfs vfs.Vfs) 
 	// Envoi des headers avec taille et nom du fichier
 	//env.sendHeaders(c, t)
 	var (
-		tarExpectedSize int64
-		tarFiles        []deterministic_tar.File
+		archiveExpectedSize uint64
+		archiveFiles        []*zip.FileHeader
 	)
 	if info.IsDir() {
-		tarExpectedSize, tarFiles, err = deterministic_tar.A_PrecalculateTarSize(subVfs.AbsolutePath(t.FilePath))
+		archiveExpectedSize, archiveFiles, err = presized_zip.PrepareZip(subVfs.AbsolutePath(t.FilePath))
 		if err != nil {
 			t.CurrentState = transfer.StateInterruptedServer
 			panic(err)
 		}
 
-		t.FileLength = tarExpectedSize
-		t.FileName = t.FileName + ".tar"
+		t.FileLength = int64(archiveExpectedSize)
+		t.FileName = t.FileName + ".zip"
 	}
 
 	fileSeek, streamLength, shouldContinue := detectRanges(c, t, info)
@@ -378,7 +379,7 @@ func (env *Env) ServeFile(c *gin.Context, t *transfer.Transfer, subVfs vfs.Vfs) 
 
 	if info.IsDir() {
 		fileSeek = 0
-		streamLength = tarExpectedSize
+		streamLength = int64(archiveExpectedSize)
 	}
 
 	var f io.ReadCloser
@@ -392,14 +393,14 @@ func (env *Env) ServeFile(c *gin.Context, t *transfer.Transfer, subVfs vfs.Vfs) 
 			go func() {
 				defer func() {
 					if err := recover(); err != nil {
-						fmt.Println("Http tar goroutine has terminated forcefully:", err)
+						fmt.Println("Http archive goroutine has terminated forcefully:", err)
 					} else {
-						fmt.Println("Http tar goroutine has terminated gracefully")
+						fmt.Println("Http archive goroutine has terminated gracefully")
 					}
 				}()
 
-				fmt.Println("DEBUG STREAM DU TAR")
-				err := deterministic_tar.B_tar_stream(pipeWriter, tarFiles, tarExpectedSize)
+				fmt.Println("DEBUG STREAM ARCHIVE")
+				err := presized_zip.StreamZip(c, subVfs.AbsolutePath(t.FilePath), pipeWriter, archiveFiles)
 				if err != nil {
 					fmt.Println("err =", err)
 					t.CurrentState = transfer.StateInterruptedServer

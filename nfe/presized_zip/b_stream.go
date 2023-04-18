@@ -128,7 +128,12 @@ func StreamZip(ctx context.Context, basePath string, w io.Writer, files []*zip.F
 		if fh.UncompressedSize64 < smallFileThreshold {
 			// Read small files from chan
 			readChan := <-fullChans
-			_, err := fw.Write(<-readChan)
+			rawData := <-readChan
+			if uint64(len(rawData)) != fh.UncompressedSize64 {
+				return fmt.Errorf("%s: read %d bytes, expected %d", fh.Name, len(rawData), fh.UncompressedSize64)
+			}
+
+			_, err := fw.Write(rawData)
 			if err != nil {
 				return fmt.Errorf("%s: %s / exp size: %d", fh.Name, err.Error(), fh.UncompressedSize64)
 			}
@@ -142,9 +147,13 @@ func StreamZip(ctx context.Context, basePath string, w io.Writer, files []*zip.F
 				}
 				defer f.Close()
 
-				_, err = io.CopyBuffer(fw, f, copyBuf)
+				wrote, err := io.CopyBuffer(fw, f, copyBuf)
 				if err != nil {
 					return fmt.Errorf("%s: %s / exp size: %d", fh.Name, err.Error(), fh.UncompressedSize64)
+				}
+
+				if uint64(wrote) != fh.UncompressedSize64 {
+					return fmt.Errorf("%s: wrote %d bytes, expected %d", fh.Name, wrote, fh.UncompressedSize64)
 				}
 
 				return nil

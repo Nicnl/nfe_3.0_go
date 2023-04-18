@@ -90,7 +90,15 @@ func (e *Env) TransfersDelete(check func(key string, val *transfer.Transfer) boo
 	}
 }
 
-func (env *Env) routineReadDisk(buffers *[chanBufferSize][MaxBufferSize]byte, readerChannel chan buffIdentifier, readReturnChannel chan buffIdentifier, f io.Reader, t *transfer.Transfer, until int64) {
+func (env *Env) routineReadDisk(
+	buffers *[chanBufferSize][MaxBufferSize]byte,
+	readerChannel chan buffIdentifier,
+	closeReaderChannel func(),
+	readReturnChannel chan buffIdentifier,
+	f io.Reader,
+	t *transfer.Transfer,
+	until int64,
+) {
 	defer func() { readerChannel = nil }()
 	defer func() { readReturnChannel = nil }()
 	//fmt.Println("Start disk gouroutine with until =", until)
@@ -105,7 +113,7 @@ func (env *Env) routineReadDisk(buffers *[chanBufferSize][MaxBufferSize]byte, re
 	var identifier buffIdentifier
 	for {
 		if until <= 0 {
-			close(readerChannel)
+			closeReaderChannel()
 			return
 		}
 
@@ -134,7 +142,7 @@ func (env *Env) routineReadDisk(buffers *[chanBufferSize][MaxBufferSize]byte, re
 					fmt.Println("Error when reading file:", err)
 				}
 				t.CurrentState = transfer.StateInterruptedServer
-				close(readerChannel)
+				closeReaderChannel()
 				return
 			}
 
@@ -157,7 +165,12 @@ type speedMeasure struct {
 	Data     int
 }
 
-func (env *Env) routineMeasureSpeed(speedChannel chan speedMeasure, t *transfer.Transfer, c *gin.Context) {
+func (env *Env) routineMeasureSpeed(
+	speedChannel chan speedMeasure,
+	closeSpeedChannel func(),
+	t *transfer.Transfer,
+	c *gin.Context,
+) {
 	defer func() {
 		if err := recover(); err != nil {
 			fmt.Println("Speed calculator goroutine has terminated forcefully:", err)
@@ -193,7 +206,7 @@ func (env *Env) routineMeasureSpeed(speedChannel chan speedMeasure, t *transfer.
 
 		if t.ShouldInterrupt {
 			t.CurrentState = transfer.StateInterruptedAdmin
-			close(speedChannel)
+			closeSpeedChannel()
 
 			defer c.Request.Body.Close()
 
@@ -426,8 +439,14 @@ func (env *Env) ServeFile(c *gin.Context, t *transfer.Transfer, subVfs vfs.Vfs) 
 	defer f.Close()
 
 	// Préparation de l'espace mémoire
-	readerChannel := make(chan buffIdentifier, chanBufferSize)
-	readReturnChannel := make(chan buffIdentifier, chanBufferSize+1)
+	var (
+		readerChannel     = make(chan buffIdentifier, chanBufferSize)
+		readReturnChannel = make(chan buffIdentifier, chanBufferSize+1)
+
+		readerChannelNeedsClosing     = true
+		readReturnChannelNeedsClosing = true
+	)
+
 	buffers := [chanBufferSize][MaxBufferSize]byte{}
 	for i := 0; i < chanBufferSize; i++ {
 		readReturnChannel <- buffIdentifier{
@@ -436,24 +455,43 @@ func (env *Env) ServeFile(c *gin.Context, t *transfer.Transfer, subVfs vfs.Vfs) 
 		}
 	}
 
+	closeReaderChannel := func() {
+		if readerChannelNeedsClosing {
+			defer helpers.RecoverStderr()
+			close(readerChannel)
+			readerChannelNeedsClosing = false
+		}
+	}
+
+	closeReadReturnChannel := func() {
+		if readReturnChannelNeedsClosing {
+			defer helpers.RecoverStderr()
+			close(readReturnChannel)
+			readReturnChannelNeedsClosing = false
+		}
+	}
+
+	defer closeReaderChannel()
+	defer closeReadReturnChannel()
+
 	// Lancement de la routine de lecture du disque
-	defer func() {
-		defer helpers.RecoverStderr()
-		close(readerChannel)
-	}()
-	defer func() {
-		defer helpers.RecoverStderr()
-		close(readReturnChannel)
-	}()
-	go env.routineReadDisk(&buffers, readerChannel, readReturnChannel, f, t, streamLength)
+	go env.routineReadDisk(&buffers, readerChannel, closeReaderChannel, readReturnChannel, f, t, streamLength)
 
 	// Lancement de la routine de mesure de vitesse
-	speedChannel := make(chan speedMeasure)
-	defer func() {
-		defer helpers.RecoverStderr()
-		close(speedChannel)
-	}()
-	go env.routineMeasureSpeed(speedChannel, t, c)
+	var (
+		speedChannel             = make(chan speedMeasure)
+		speedChannelNeedsClosing = true
+	)
+
+	closeSpeedChannel := func() {
+		if speedChannelNeedsClosing {
+			defer helpers.RecoverStderr()
+			close(speedChannel)
+			speedChannelNeedsClosing = false
+		}
+	}
+	defer closeSpeedChannel()
+	go env.routineMeasureSpeed(speedChannel, closeSpeedChannel, t, c)
 
 	// Stream des données
 	for {

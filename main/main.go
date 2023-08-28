@@ -83,6 +83,17 @@ func main() {
 		vlcHotFix = true
 	}
 
+	saltLegacy, saltList, saltDown, saltGlobal := os.Getenv("GLOB_SALT_LEGACY"), os.Getenv("GLOB_SALT_LIST"), os.Getenv("GLOB_SALT_DOWN"), os.Getenv("SALT")
+	if saltLegacy == "" && saltGlobal != "" {
+		saltLegacy = fmt.Sprintf("%32x", md5.Sum([]byte(saltGlobal + "NXZwYSwSGvGPerygzaVHJjz4hOTRPsfW"))) + "tXesPIh4N5vYcX7zsV1lpoIsCSGmmKwO"
+	}
+	if saltList == "" && saltGlobal != "" {
+		saltList = fmt.Sprintf("%32x", md5.Sum([]byte(saltGlobal + "RTy1rVzCOko88HtHjJ2jxW8oMT2sQV9B"))) + "FDirApGuNrEj2pNgaZOFQ93OPboY1RjX"
+	}
+	if saltDown == "" && saltGlobal != "" {
+		saltDown = fmt.Sprintf("%32x", md5.Sum([]byte(saltGlobal + "Jg3DzqJdBZZRsI6JrAyFsupCH9QpAC45"))) + "efwmfYhA2jfvO6OpDjgP9GOWRLAgzkmA"
+	}
+
 	env := serve.Env{
 		Vfs: vfs.New(os.Getenv("BASE_PATH")),
 		//Transfers: map[string]*transfer.Transfer{},
@@ -96,9 +107,9 @@ func main() {
 		NonAdminTimeLimit:  nonAdminTimeLimit,
 		DefaultSpeedLimit:  defaultSpeedLimit,
 		DefaultTimeLimit:   defaultTimeLimit,
-		GlobSalt:           []byte(os.Getenv("GLOB_SALT_LEGACY")),
-		GlobUrlList:        []byte(os.Getenv("GLOB_SALT_LIST")),
-		GlobUrlDown:        []byte(os.Getenv("GLOB_SALT_DOWN")),
+		GlobSalt:           []byte(saltLegacy),
+		GlobUrlList:        []byte(saltList),
+		GlobUrlDown:        []byte(saltDown),
 	}
 
 	env.TransfersInit()

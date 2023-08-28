@@ -1,6 +1,7 @@
 package main
 
 import (
+        "crypto/md5"
 	"encoding/json"
 	"fmt"
 	"github.com/gin-contrib/cors"

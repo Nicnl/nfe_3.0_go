@@ -85,6 +85,9 @@ func main() {
 	}
 
 	saltLegacy, saltList, saltDown, saltGlobal := os.Getenv("GLOB_SALT_LEGACY"), os.Getenv("GLOB_SALT_LIST"), os.Getenv("GLOB_SALT_DOWN"), os.Getenv("SALT")
+	if saltGlobal == "" && os.Getenv("JWT_SECRET") != "" {
+		saltGlobal = fmt.Sprintf("%32x", md5.Sum([]byte(os.Getenv("JWT_SECRET") + "AoOX11JZOPtPb73gjqkbTxaIuwNHlAIM"))) + "xm7NK3yKPXGvf50QSKll8ftzfBzb3zut"
+	}
 	if saltLegacy == "" && saltGlobal != "" {
 		saltLegacy = fmt.Sprintf("%32x", md5.Sum([]byte(saltGlobal + "NXZwYSwSGvGPerygzaVHJjz4hOTRPsfW"))) + "tXesPIh4N5vYcX7zsV1lpoIsCSGmmKwO"
 	}

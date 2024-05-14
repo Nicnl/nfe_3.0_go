@@ -232,7 +232,8 @@ func rangeNotSatisfiable(c *gin.Context, t *transfer.Transfer) {
 }
 
 func rangeNotCompatible(c *gin.Context) {
-	c.Status(http.StatusNotImplemented)
+	c.Status(http.StatusRequestedRangeNotSatisfiable)
+	c.Header("Accept-Ranges", "none")
 }
 
 func detectRanges(c *gin.Context, t *transfer.Transfer, info os.FileInfo) (int64, int64, bool) {
@@ -243,7 +244,13 @@ func detectRanges(c *gin.Context, t *transfer.Transfer, info os.FileInfo) (int64
 		t.SectionStart = 0
 
 		c.Status(http.StatusOK)
-		//c.Header("Accept-Ranges", fmt.Sprintf("bytes"))
+
+		if info.IsDir() {
+			c.Header("Accept-Ranges", "none")
+		} else {
+			c.Header("Accept-Ranges", "bytes")
+		}
+
 		c.Header("Content-Length", fmt.Sprintf("%d", t.FileLength))
 		c.Header("Content-Type", mime.FormatMediaType(mimelist.GetMime(t.FileName), map[string]string{
 			"name": t.FileName,

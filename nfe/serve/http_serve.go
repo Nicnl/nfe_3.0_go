@@ -231,6 +231,10 @@ func rangeNotSatisfiable(c *gin.Context, t *transfer.Transfer) {
 	c.Header("Accept-Ranges", fmt.Sprintf("bytes"))
 }
 
+func rangeNotCompatible(c *gin.Context) {
+	c.Status(http.StatusNotImplemented)
+}
+
 func detectRanges(c *gin.Context, t *transfer.Transfer, info os.FileInfo) (int64, int64, bool) {
 	rangeHeader := c.GetHeader("Range")
 
@@ -251,6 +255,13 @@ func detectRanges(c *gin.Context, t *transfer.Transfer, info os.FileInfo) (int64
 		c.Header("Content-Description", "File Transfer")
 
 		return 0, t.FileLength, true // Todo : vérifier range de fin
+	}
+
+	// Si c'est un dossier (zip) => pas de range possible
+	if info.IsDir() {
+		t.CurrentState = transfer.StateInterruptedServer
+		rangeNotCompatible(c)
+		return -1, -1, false
 	}
 
 	// Pas de support des plusieurs ranges
@@ -393,54 +404,54 @@ func (env *Env) ServeFile(c *gin.Context, t *transfer.Transfer, subVfs vfs.Vfs) 
 		return
 	}
 
+	var f io.ReadCloser
 	if info.IsDir() {
+		// Si c'est un dossier, on stream l'archive zip
+
+		// Définition des variables
 		fileSeek = 0
 		streamLength = int64(archiveExpectedSize)
-	}
 
-	var f io.ReadCloser
-	if fileSeek == 0 {
-		if info.IsDir() {
-			pipeBuf := buffer.New(2 * 1024 * 1024) // Buffer de 2Mo pour les petits fichiers
-			pipeReader, pipeWriter := nio.Pipe(pipeBuf)
+		// Création du reader
+		pipeBuf := buffer.New(2 * 1024 * 1024) // Buffer de 2Mo pour les petits fichiers
+		pipeReader, pipeWriter := nio.Pipe(pipeBuf)
 
-			f = pipeReader
+		f = pipeReader
 
-			go func() {
-				defer func() {
-					if err := recover(); err != nil {
-						fmt.Println("Http archive goroutine has terminated forcefully:", err)
-					} else {
-						fmt.Println("Http archive goroutine has terminated gracefully")
-					}
-				}()
-
-				fmt.Println("# Streaming archive: ", t.FilePath)
-				err := presized_zip.Stream(c, subVfs.AbsolutePath(t.FilePath), pipeWriter, archiveFiles)
-				if err != nil {
-					fmt.Println("# Archive has not streamed completely:", t.FilePath, "=>", err)
-					t.CurrentState = transfer.StateInterruptedServer
-					panic(err)
+		go func() {
+			defer func() {
+				if err := recover(); err != nil {
+					fmt.Println("Http archive goroutine has terminated forcefully:", err)
 				} else {
-					fmt.Println("# Archive was streamed successfully:", t.FilePath)
+					fmt.Println("Http archive goroutine has terminated gracefully")
 				}
 			}()
-		} else {
-			f, err = subVfs.Open(t.FilePath)
-		}
-	} else {
-		if info.IsDir() {
-			t.CurrentState = transfer.StateInterruptedServer
-			panic("cannot seek on a directory")
-		}
 
+			fmt.Println("# Streaming archive: ", t.FilePath)
+			err := presized_zip.Stream(c, subVfs.AbsolutePath(t.FilePath), pipeWriter, archiveFiles)
+			if err != nil {
+				fmt.Println("# Archive has not streamed completely:", t.FilePath, "=>", err)
+				t.CurrentState = transfer.StateInterruptedServer
+				panic(err)
+			} else {
+				fmt.Println("# Archive was streamed successfully:", t.FilePath)
+			}
+		}()
+	} else if fileSeek == 0 {
+		f, err = subVfs.Open(t.FilePath)
+		if err != nil {
+			t.CurrentState = transfer.StateInterruptedServer
+			panic(err)
+		}
+		defer f.Close()
+	} else {
 		f, err = subVfs.OpenSeek(t.FilePath, fileSeek)
+		if err != nil {
+			t.CurrentState = transfer.StateInterruptedServer
+			panic(err)
+		}
+		defer f.Close()
 	}
-	if err != nil {
-		t.CurrentState = transfer.StateInterruptedServer
-		panic(err)
-	}
-	defer f.Close()
 
 	// Préparation de l'espace mémoire
 	var (

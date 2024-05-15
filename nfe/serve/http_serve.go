@@ -331,7 +331,7 @@ func detectRanges(c *gin.Context, t *transfer.Transfer, info os.FileInfo) (int64
 	c.Header("Content-Type", mime.FormatMediaType(mimelist.GetMime(t.FileName), map[string]string{
 		"name": t.FileName,
 	}))
-	c.Header("Content-Disposition", mime.FormatMediaType("attachment", map[string]string{
+	c.Header("Content-Disposition", mime.FormatMediaType("inline", map[string]string{
 		"filename": t.FileName,
 	}))
 	c.Header("Content-Range", fmt.Sprintf("bytes %d-%d/%d", rangeStart, rangeEnd, t.FileLength))
